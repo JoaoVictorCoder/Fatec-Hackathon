@@ -16,9 +16,10 @@ const FATOR_CO2_POR_KM = Object.freeze({
   ALCOOL: 1.51,
   DIESEL: 2.6,
   ELETRICO: 0.0545,
-  ETANOL: 1.51,
-  NAO_INFORMADO: 0.18
+  ETANOL: 1.51
 });
+
+const DISTANCIA_PADRAO_KM = 250;
 
 function normalizeKey(value) {
   return (value || "")
@@ -32,14 +33,14 @@ function normalizeKey(value) {
 function resolveDistancia(cidadeOrigem) {
   const key = normalizeKey(cidadeOrigem);
   if (!key) {
-    return 250;
+    return DISTANCIA_PADRAO_KM;
   }
-  return DISTANCIAS_PARA_FRANCA_KM[key] || 250;
+  return DISTANCIAS_PARA_FRANCA_KM[key] || DISTANCIA_PADRAO_KM;
 }
 
 function resolveFator(combustivel) {
   const key = normalizeKey(combustivel);
-  return FATOR_CO2_POR_KM[key] || FATOR_CO2_POR_KM.NAO_INFORMADO;
+  return FATOR_CO2_POR_KM[key] || null;
 }
 
 export function calculateCarbonEstimate({
@@ -53,7 +54,8 @@ export function calculateCarbonEstimate({
       ? distanciaKm
       : resolveDistancia(cidadeOrigem);
   const factor = resolveFator(resolvedCombustivel);
-  const pegadaCarbonoEstimada = Number((resolvedDistance * factor).toFixed(3));
+  const pegadaCarbonoEstimada =
+    factor === null ? null : Number((resolvedDistance * factor).toFixed(3));
 
   return {
     cidadeOrigem: cidadeOrigem || "Nao informado",
@@ -72,6 +74,10 @@ export function enqueueDescarbonizacaoProcess(credenciado) {
         combustivel: credenciado.combustivel || credenciado.tipoCombustivel,
         distanciaKm: credenciado.distanciaKm
       });
+
+      if (estimate.fatorEmissao === null || estimate.pegadaCarbonoEstimada === null) {
+        return;
+      }
 
       await createDescarbonizacaoRegistro({
         credenciadoId: credenciado.id,

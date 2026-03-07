@@ -31,7 +31,7 @@ export default function AdminCredencialView({ data, loading, saving, error, onSa
 
   return (
     <main className="single-page">
-      <section className="card">
+      <section className="card card-elevated">
         <div className="admin-header">
           <h2>Consulta de Credencial</h2>
           <Link className="link-button" to="/admin">
@@ -142,9 +142,16 @@ export default function AdminCredencialView({ data, loading, saving, error, onSa
               <Row label="CPF" value={data.credenciado?.cpf} />
               <Row label="CNPJ" value={data.credenciado?.cnpj} />
               <Row label="Nacionalidade" value={data.credenciado?.nacionalidade} />
+              <Row label="Nacionalidade da empresa" value={data.credenciado?.nacionalidadeEmpresa} />
               <Row label="Tipo combustivel" value={data.credenciado?.tipoCombustivel} />
               <Row label="PCD" value={data.credenciado?.pcd ? "Sim" : "Nao"} />
               <Row label="LGPD" value={data.credenciado?.aceitouLgpd ? "Aceito" : "Nao"} />
+              <Row
+                label="Compartilhamento Expositores"
+                value={
+                  data.credenciado?.aceitouCompartilhamentoComExpositores ? "Aceito" : "Nao"
+                }
+              />
               <Row label="Evento" value={data.credenciado?.evento?.nomeEvento} />
               <Row label="Nome empresa" value={data.credenciado?.nomeEmpresa} />
               <Row label="Nome veiculo" value={data.credenciado?.nomeVeiculo} />

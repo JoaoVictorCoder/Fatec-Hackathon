@@ -89,10 +89,12 @@ model Credenciado {
   pegadaCarbonoEstimada Float?
   pcd                  Boolean              @default(false)
   aceitouLgpd          Boolean
+  aceitouCompartilhamentoComExpositores Boolean @default(false)
 
   cnpj            String?
   siteEmpresa     String?
   nomeEmpresa     String?
+  nacionalidadeEmpresa String?
   ccir            String?
   nomePropriedade String?
   nomeVeiculo     String?
@@ -147,6 +149,9 @@ model AdminUser {
   nome         String
   role         AdminRole @default(ADMIN)
   ativo        Boolean  @default(true)
+  standId      String?
+  standName    String?
+  empresaNome  String?
   permissoesCustomizadas Json?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -189,7 +194,11 @@ model AccessAttempt {
   gateDeviceId String?      @db.Uuid
   operatorId   String?      @db.Uuid
   operatorNome String?
+  operatorEmail String?
   operatorRole String?
+  standId      String?
+  standName    String?
+  empresaNome  String?
   deviceId     String?
   deviceInfo   Json?
   accessPoint  String?

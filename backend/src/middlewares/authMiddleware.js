@@ -26,6 +26,9 @@ export async function requireAuth(req, res, next) {
       email: admin.email,
       nome: admin.nome,
       role: admin.role,
+      standId: admin.standId || null,
+      standName: admin.standName || null,
+      empresaNome: admin.empresaNome || null,
       permissoesCustomizadas:
         admin.permissoesCustomizadas ||
         ((admin.role === AdminRole.OPERADOR_QR ||

@@ -13,7 +13,7 @@ export default function AdminLoginForm({
   return (
     <section className="card auth-card">
       <h2>{title}</h2>
-      <p>{subtitle}</p>
+      <p className="section-subtitle">{subtitle}</p>
 
       <form
         className="grid single-column"

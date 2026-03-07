@@ -38,6 +38,7 @@ import {
 } from "../controllers/accessLogController.js";
 import { backupExportHandler, backupStatusHandler } from "../controllers/backupController.js";
 import { AdminRole } from "../domain/enums.js";
+import { standVisitorsReportHandler } from "../controllers/reportController.js";
 
 export const adminRouter = Router();
 
@@ -127,6 +128,11 @@ adminRouter.get(
   "/access-logs/:id",
   asyncHandler(requireRoles([AdminRole.MASTER_ADMIN, AdminRole.ADMIN, AdminRole.SYSTEM])),
   asyncHandler(getAccessLogByIdAdminHandler)
+);
+adminRouter.get(
+  "/reports/stand-visitors",
+  asyncHandler(requireRoles([AdminRole.MASTER_ADMIN, AdminRole.ADMIN, AdminRole.SYSTEM])),
+  asyncHandler(standVisitorsReportHandler)
 );
 adminRouter.post(
   "/check-in/validate",

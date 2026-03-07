@@ -12,12 +12,12 @@ export const adminComissaoCategoria = {
 };
 
 export const categoryExtraFields = {
-  EXPOSITOR: ["nomeEmpresa", "siteEmpresa"],
+  EXPOSITOR: ["nomeEmpresa", "nacionalidadeEmpresa", "siteEmpresa"],
   CAFEICULTOR: ["nomePropriedade", "ccir"],
   VISITANTE: ["nacionalidade"],
-  IMPRENSA: ["nomeVeiculo", "siteEmpresa"],
+  IMPRENSA: ["nomeVeiculo", "nacionalidadeEmpresa", "siteEmpresa"],
   COMISSAO_ORGANIZADORA: ["funcaoCargo"],
-  COLABORADOR_TERCEIRIZADO: ["nomeEmpresa", "funcaoCargo"]
+  COLABORADOR_TERCEIRIZADO: ["nomeEmpresa", "nacionalidadeEmpresa", "funcaoCargo"]
 };
 
 export const labels = {
@@ -28,12 +28,14 @@ export const labels = {
   municipio: "Municipio",
   uf: "UF",
   nacionalidade: "Nacionalidade",
+  nacionalidadeEmpresa: "Nacionalidade da empresa",
   tipoCombustivel: "Tipo de combustivel",
   cidadeOrigem: "Cidade de origem",
   combustivel: "Combustivel",
   distanciaKm: "Distancia ate o evento (km)",
   pegadaCarbonoEstimada: "Pegada de carbono estimada",
   pcd: "Pessoa com Deficiencia (PCD)",
+  aceitouCompartilhamentoComExpositores: "Aceito compartilhar meus dados com expositores/stands visitados para contato posterior",
   cnpj: "CNPJ",
   siteEmpresa: "Site da empresa",
   nomeEmpresa: "Nome da empresa",
@@ -65,9 +67,11 @@ export const baseForm = {
   distanciaKm: "",
   pegadaCarbonoEstimada: "",
   nacionalidade: "",
+  nacionalidadeEmpresa: "",
   tipoCombustivel: "NAO_INFORMADO",
   pcd: false,
   aceitouLgpd: false,
+  aceitouCompartilhamentoComExpositores: false,
   siteEmpresa: "",
   nomeEmpresa: "",
   ccir: "",

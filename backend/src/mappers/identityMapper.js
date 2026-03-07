@@ -68,6 +68,7 @@ export function mapCredenciadoIdentity(credenciado) {
     municipio: credenciado.municipio,
     uf: credenciado.uf,
     nacionalidade: credenciado.nacionalidade,
+    nacionalidadeEmpresa: credenciado.nacionalidadeEmpresa,
     tipoCombustivel: credenciado.tipoCombustivel,
     cidadeOrigem: credenciado.cidadeOrigem,
     combustivel: credenciado.combustivel,
@@ -75,6 +76,7 @@ export function mapCredenciadoIdentity(credenciado) {
     pegadaCarbonoEstimada: credenciado.pegadaCarbonoEstimada,
     pcd: credenciado.pcd,
     aceitouLgpd: credenciado.aceitouLgpd,
+    aceitouCompartilhamentoComExpositores: credenciado.aceitouCompartilhamentoComExpositores,
     siteEmpresa: credenciado.siteEmpresa,
     nomeEmpresa: credenciado.nomeEmpresa,
     ccir: credenciado.ccir,
@@ -101,6 +103,8 @@ export function mapPublicCredenciamentoResult(credenciado) {
     categoria: credenciado.categoria,
     statusCredenciamento: credenciado.statusCredenciamento,
     aceitouLgpd: credenciado.aceitouLgpd,
+    aceitouCompartilhamentoComExpositores: credenciado.aceitouCompartilhamentoComExpositores,
+    aceitouCompartilhamentoComExpositores: credenciado.aceitouCompartilhamentoComExpositores,
     evento: credenciado.evento
       ? {
           id: credenciado.evento.id,
@@ -136,6 +140,7 @@ export function mapAdminCredenciadoListItem(credenciado) {
     cpfMascarado: maskCpf(credenciado.cpf),
     cnpjMascarado: credenciado.cnpj ? maskCnpj(credenciado.cnpj) : null,
     nacionalidade: credenciado.nacionalidade,
+    nacionalidadeEmpresa: credenciado.nacionalidadeEmpresa,
     tipoCombustivel: credenciado.tipoCombustivel,
     cidadeOrigem: credenciado.cidadeOrigem,
     combustivel: credenciado.combustivel,

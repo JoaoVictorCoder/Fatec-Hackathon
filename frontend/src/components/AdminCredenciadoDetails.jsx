@@ -37,12 +37,15 @@ export default function AdminCredenciadoDetails({
     ccir: credenciado?.ccir || "",
     funcaoCargo: credenciado?.funcaoCargo || "",
     nacionalidade: credenciado?.nacionalidade || "",
+    nacionalidadeEmpresa: credenciado?.nacionalidadeEmpresa || "",
     tipoCombustivel: credenciado?.tipoCombustivel || "NAO_INFORMADO",
     cidadeOrigem: credenciado?.cidadeOrigem || "",
     combustivel: credenciado?.combustivel || "NAO_INFORMADO",
     distanciaKm: credenciado?.distanciaKm || "",
     pegadaCarbonoEstimada: credenciado?.pegadaCarbonoEstimada || "",
     aceitouLgpd: credenciado?.aceitouLgpd === true,
+    aceitouCompartilhamentoComExpositores:
+      credenciado?.aceitouCompartilhamentoComExpositores === true,
     pcd: credenciado?.pcd === true
   });
 
@@ -64,22 +67,24 @@ export default function AdminCredenciadoDetails({
           <button type="button" onClick={() => setEditMode((v) => !v)}>
             {editMode ? "Cancelar edicao" : "Editar cadastro"}
           </button>
-          <button type="button" onClick={onSoftDelete}>
+          <button type="button" className="btn-danger" onClick={onSoftDelete}>
             Inativar cadastro
           </button>
           <button
             type="button"
+            className="btn-danger"
             onClick={() => onCredentialStatusChange("INATIVA")}
           >
             Bloquear credencial
           </button>
           <button
             type="button"
+            className="btn-secondary"
             onClick={() => onCredentialStatusChange("ATIVA")}
           >
             Reativar credencial
           </button>
-          <button type="button" onClick={onReissue}>
+          <button type="button" className="btn-secondary" onClick={onReissue}>
             Reemitir credencial
           </button>
           {credenciado?.credencial?.id && (
@@ -127,6 +132,7 @@ export default function AdminCredenciadoDetails({
               ["municipio", "Municipio"],
               ["uf", "UF"],
               ["nacionalidade", "Nacionalidade"],
+              ["nacionalidadeEmpresa", "Nacionalidade da empresa"],
               ["tipoCombustivel", "Tipo combustivel"],
               ["cidadeOrigem", "Cidade origem"],
               ["combustivel", "Combustivel"],
@@ -169,6 +175,19 @@ export default function AdminCredenciadoDetails({
               />
               Aceitou LGPD
             </label>
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={form.aceitouCompartilhamentoComExpositores}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    aceitouCompartilhamentoComExpositores: event.target.checked
+                  }))
+                }
+              />
+              Aceitou compartilhamento com expositores
+            </label>
             <button type="submit">Salvar alteracoes</button>
           </form>
         )}
@@ -183,6 +202,7 @@ export default function AdminCredenciadoDetails({
           <Field label="CPF" value={credenciado.cpf} />
           <Field label="CNPJ" value={credenciado.cnpj} />
           <Field label="Nacionalidade" value={credenciado.nacionalidade} />
+          <Field label="Nacionalidade da empresa" value={credenciado.nacionalidadeEmpresa} />
           <Field label="Tipo combustivel" value={credenciado.tipoCombustivel} />
           <Field label="Cidade origem" value={credenciado.cidadeOrigem} />
           <Field label="Combustivel" value={credenciado.combustivel} />
@@ -190,6 +210,10 @@ export default function AdminCredenciadoDetails({
           <Field label="Pegada CO2" value={credenciado.pegadaCarbonoEstimada} />
           <Field label="PCD" value={credenciado.pcd ? "Sim" : "Nao"} />
           <Field label="LGPD" value={credenciado.aceitouLgpd ? "Aceito" : "Nao"} />
+          <Field
+            label="Compartilhamento com expositores"
+            value={credenciado.aceitouCompartilhamentoComExpositores ? "Aceito" : "Nao"}
+          />
           <Field label="Evento" value={credenciado.evento?.nomeEvento} />
           <Field label="Codigo da credencial" value={credenciado.credencial?.codigoUnico} />
           <Field label="Status da credencial" value={credenciado.credencial?.statusCredencial} />

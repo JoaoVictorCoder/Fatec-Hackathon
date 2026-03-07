@@ -6,6 +6,7 @@ import {
   createCredenciadoPublic,
   exportAdminBackup,
   getAdminAccessLogs,
+  getAdminStandVisitorsReport,
   getAdminAnalyticsDescarbonizacao,
   getAdminAnalyticsFraud,
   getAdminAnalyticsOverview,
@@ -28,6 +29,7 @@ import {
   patchAdminCredencialStatus,
   patchAdminUserActive,
   patchAdminUserPermissions,
+  updateAdminUser,
   reissueAdminCredencial,
   softDeleteAdminCredenciado,
   updateAdminCredencial,
@@ -79,9 +81,11 @@ function PublicAreaPage() {
       }
       if (name === "cidadeOrigem") {
         const estimatedDistance = resolveDistanceFromCidade(nextValue);
-        if (estimatedDistance != null) {
-          nextForm.distanciaKm = String(estimatedDistance);
-        }
+        nextForm.distanciaKm = String(estimatedDistance);
+      }
+      if (name === "municipio" && !nextForm.cidadeOrigem) {
+        const estimatedDistance = resolveDistanceFromCidade(nextValue);
+        nextForm.distanciaKm = String(estimatedDistance);
       }
       const { errors } = validatePublicCredenciadoForm(nextForm);
       setFieldErrors((old) => ({ ...old, [name]: errors[name], documento: errors.documento }));
@@ -117,7 +121,9 @@ function PublicAreaPage() {
         combustivel: true,
         distanciaKm: true,
         nacionalidade: true,
+        nacionalidadeEmpresa: true,
         aceitouLgpd: true,
+        aceitouCompartilhamentoComExpositores: true,
         nomeEmpresa: true,
         siteEmpresa: true,
         ccir: true,
@@ -149,10 +155,25 @@ function PublicAreaPage() {
   }
 
   return (
-    <main className="single-page">
-      <section className="card">
-        <h2>Cadastro Publico</h2>
-        <p>Preencha seus dados para credenciamento no evento.</p>
+    <main className="public-layout">
+      <section className="public-hero card">
+        <div className="hero-top">
+          <span className="hero-chip">6a Alta Cafe 2026</span>
+          <span className="hero-chip muted">Cultivando conexoes</span>
+        </div>
+        <h2>Credenciamento Oficial do Evento</h2>
+        <p>
+          Plataforma institucional para cadastro, emissao de credencial e controle de acesso.
+        </p>
+        <div className="hero-meta">
+          <strong>24 a 26 de marco de 2026</strong>
+          <span>Clube de Campo da Franca</span>
+        </div>
+      </section>
+
+      <section className="card card-elevated">
+        <h2>Cadastro</h2>
+        <p className="section-subtitle">Preencha seus dados para o credenciamento no evento.</p>
         <CredenciadoForm
           form={form}
           saving={saving}
@@ -165,47 +186,46 @@ function PublicAreaPage() {
         {error && <p className="error">{error}</p>}
         {success && <p className="success">{success}</p>}
         {lastCreated?.id && <p>ID do cadastro: {lastCreated.id}</p>}
-      </section>
+        <section className="public-credential">
+          <h3>Sua credencial</h3>
+          {!lastCreated?.credencial?.id && (
+            <p className="hint-text">A credencial aparece aqui apos o cadastro concluido.</p>
+          )}
+          {lastCreated?.credencial?.id && (
+            <div className="details-grid">
+              <div className="detail-field">
+                <span>Categoria</span>
+                <strong>{lastCreated.categoria}</strong>
+              </div>
+              <div className="detail-field">
+                <span>Status credenciamento</span>
+                <strong>{lastCreated.statusCredenciamento}</strong>
+              </div>
+              <div className="detail-field">
+                <span>Codigo da credencial</span>
+                <strong>{lastCreated.credencial?.codigoUnico || "-"}</strong>
+              </div>
+              <div className="detail-field">
+                <span>PDF da credencial</span>
+                <a
+                  className="link-button"
+                  target="_blank"
+                  rel="noreferrer"
+                  href={getPublicCredencialPdfUrl(lastCreated.credencial.id)}
+                >
+                  Abrir PDF
+                </a>
+              </div>
+            </div>
+          )}
 
-      <section className="card">
-        <h2>Sua credencial</h2>
-        {!lastCreated?.credencial?.id && (
-          <p>A credencial e exibida aqui apos um cadastro concluido.</p>
-        )}
-        {lastCreated?.credencial?.id && (
-          <div className="details-grid">
-            <div className="detail-field">
-              <span>Categoria</span>
-              <strong>{lastCreated.categoria}</strong>
+          {qrDataUrl && (
+            <div className="qr-section">
+              <h3>QR Code</h3>
+              <img src={qrDataUrl} alt="QR da credencial" className="qr-image" />
             </div>
-            <div className="detail-field">
-              <span>Status credenciamento</span>
-              <strong>{lastCreated.statusCredenciamento}</strong>
-            </div>
-            <div className="detail-field">
-              <span>Codigo da credencial</span>
-              <strong>{lastCreated.credencial?.codigoUnico || "-"}</strong>
-            </div>
-            <div className="detail-field">
-              <span>PDF da credencial</span>
-              <a
-                className="link-button"
-                target="_blank"
-                rel="noreferrer"
-                href={getPublicCredencialPdfUrl(lastCreated.credencial.id)}
-              >
-                Abrir PDF
-              </a>
-            </div>
-          </div>
-        )}
-
-        {qrDataUrl && (
-          <div className="qr-section">
-            <h3>QR Code</h3>
-            <img src={qrDataUrl} alt="QR da credencial" className="qr-image" />
-          </div>
-        )}
+          )}
+        </section>
       </section>
     </main>
   );
@@ -217,12 +237,16 @@ function AdminLoginPage({ onLoggedIn }) {
   const [error, setError] = useState("");
 
   return (
-    <main className="single-page">
+    <main className="auth-layout">
+      <section className="auth-hero card">
+        <h2>Area Administrativa</h2>
+        <p>Acesso seguro para equipe organizadora e operacao do evento.</p>
+      </section>
       <AdminLoginForm
         loading={loading}
         error={error}
-        title="Login Operador QR"
-        subtitle="Acesso operacional para validacao de entrada."
+        title="Entrar no Painel Admin"
+        subtitle="Use seu e-mail e senha para continuar."
         onSubmit={async (payload) => {
           setLoading(true);
           setError("");
@@ -268,6 +292,22 @@ function AdminDashboardPage({ admin, onLogout }) {
   const [internalUsers, setInternalUsers] = useState([]);
   const [accessLogs, setAccessLogs] = useState([]);
   const [backupStatus, setBackupStatus] = useState(null);
+  const [accessLogFilters, setAccessLogFilters] = useState({
+    operatorId: "",
+    standId: "",
+    dateFrom: "",
+    dateTo: "",
+    categoria: "",
+    resultado: ""
+  });
+  const [standReportFilters, setStandReportFilters] = useState({
+    standId: "",
+    operatorId: "",
+    dateFrom: "",
+    dateTo: "",
+    categoria: ""
+  });
+  const [standReport, setStandReport] = useState([]);
 
   async function loadData(activeFilters = filters) {
     setLoading(true);
@@ -289,14 +329,16 @@ function AdminDashboardPage({ admin, onLogout }) {
       setAnalyticsDescarbonizacao(descarbonizacao);
 
       if (admin?.role === "MASTER_ADMIN") {
-        const [usersData, accessLogsData, backupData] = await Promise.all([
+        const [usersData, accessLogsData, backupData, reportData] = await Promise.all([
           getAdminUsers(),
-          getAdminAccessLogs({ page: 1, pageSize: 30 }),
-          getAdminBackupStatus()
+          getAdminAccessLogs({ page: 1, pageSize: 30, ...accessLogFilters }),
+          getAdminBackupStatus(),
+          getAdminStandVisitorsReport(standReportFilters)
         ]);
         setInternalUsers(usersData.items || []);
         setAccessLogs(accessLogsData.items || []);
         setBackupStatus(backupData);
+        setStandReport(reportData.items || []);
       }
     } catch (loadError) {
       setError(loadError.message || "Falha ao carregar dados administrativos.");
@@ -417,6 +459,7 @@ function AdminDashboardPage({ admin, onLogout }) {
         <>
           <InternalUsersPanel
             users={internalUsers}
+            currentUserId={admin?.id}
             onCreate={async (payload) => {
               await createAdminUser(payload);
               await loadData(filters);
@@ -429,15 +472,184 @@ function AdminDashboardPage({ admin, onLogout }) {
               await patchAdminUserPermissions(id, permissions);
               await loadData(filters);
             }}
+            onUpdateUser={async (id, payload) => {
+              await updateAdminUser(id, payload);
+              await loadData(filters);
+            }}
           />
 
           <section className="card">
             <h3>Logs de Entrada</h3>
+            <div className="grid">
+              <label>
+                Operador
+                <select
+                  value={accessLogFilters.operatorId}
+                  onChange={(event) =>
+                    setAccessLogFilters((prev) => ({ ...prev, operatorId: event.target.value }))
+                  }
+                >
+                  <option value="">Todos</option>
+                  {internalUsers.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.nome}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Stand ID
+                <input
+                  value={accessLogFilters.standId}
+                  onChange={(event) =>
+                    setAccessLogFilters((prev) => ({ ...prev, standId: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Data inicial
+                <input
+                  type="datetime-local"
+                  value={accessLogFilters.dateFrom}
+                  onChange={(event) =>
+                    setAccessLogFilters((prev) => ({ ...prev, dateFrom: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Data final
+                <input
+                  type="datetime-local"
+                  value={accessLogFilters.dateTo}
+                  onChange={(event) =>
+                    setAccessLogFilters((prev) => ({ ...prev, dateTo: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Categoria
+                <input
+                  value={accessLogFilters.categoria}
+                  onChange={(event) =>
+                    setAccessLogFilters((prev) => ({ ...prev, categoria: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Resultado
+                <select
+                  value={accessLogFilters.resultado}
+                  onChange={(event) =>
+                    setAccessLogFilters((prev) => ({ ...prev, resultado: event.target.value }))
+                  }
+                >
+                  <option value="">Todos</option>
+                  <option value="ALLOW">ALLOW</option>
+                  <option value="DENY">DENY</option>
+                </select>
+              </label>
+            </div>
+            <div className="toolbar">
+              <button type="button" onClick={() => loadData(filters)}>
+                Aplicar filtros
+              </button>
+            </div>
             <ul className="event-list compact">
               {accessLogs.map((item) => (
                 <li key={item.id} className="event-item">
                   <strong>{item.resultado} - {item.motivo}</strong>
-                  <span>{item.nomeCredenciado || "Sem vinculo"} | Operador: {item.operatorNome || "-"}</span>
+                  <span>
+                    {item.nomeCredenciado || "Sem vinculo"} | Operador: {item.operatorNome || "-"} (
+                    {item.operatorEmail || "-"})
+                  </span>
+                  <small>
+                    Stand: {item.standName || "-"} ({item.standId || "-"}) | Empresa:{" "}
+                    {item.empresaNome || "-"}
+                  </small>
+                  <small>{new Date(item.createdAt).toLocaleString("pt-BR")}</small>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="card">
+            <h3>Relatorio de Visitantes por Stand</h3>
+            <div className="grid">
+              <label>
+                Stand ID
+                <input
+                  value={standReportFilters.standId}
+                  onChange={(event) =>
+                    setStandReportFilters((prev) => ({ ...prev, standId: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Operador
+                <select
+                  value={standReportFilters.operatorId}
+                  onChange={(event) =>
+                    setStandReportFilters((prev) => ({ ...prev, operatorId: event.target.value }))
+                  }
+                >
+                  <option value="">Todos</option>
+                  {internalUsers.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.nome}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Data inicial
+                <input
+                  type="datetime-local"
+                  value={standReportFilters.dateFrom}
+                  onChange={(event) =>
+                    setStandReportFilters((prev) => ({ ...prev, dateFrom: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Data final
+                <input
+                  type="datetime-local"
+                  value={standReportFilters.dateTo}
+                  onChange={(event) =>
+                    setStandReportFilters((prev) => ({ ...prev, dateTo: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Categoria
+                <input
+                  value={standReportFilters.categoria}
+                  onChange={(event) =>
+                    setStandReportFilters((prev) => ({ ...prev, categoria: event.target.value }))
+                  }
+                />
+              </label>
+            </div>
+            <div className="toolbar">
+              <button type="button" onClick={() => loadData(filters)}>
+                Atualizar relatorio
+              </button>
+            </div>
+            <ul className="event-list compact">
+              {standReport.map((item) => (
+                <li key={item.accessAttemptId} className="event-item">
+                  <strong>
+                    {item.visitor?.nomeCompleto || "-"} | {item.visitor?.categoria || "-"}
+                  </strong>
+                  <span>
+                    Stand: {item.standName || "-"} ({item.standId || "-"}) | Empresa:{" "}
+                    {item.empresaNome || "-"}
+                  </span>
+                  <small>
+                    Contato: {item.visitor?.email || "-"} | {item.visitor?.celular || "-"} | LGPD
+                    compartilhamento:{" "}
+                    {item.visitor?.aceitouCompartilhamentoComExpositores ? "sim" : "nao"}
+                  </small>
                   <small>{new Date(item.createdAt).toLocaleString("pt-BR")}</small>
                 </li>
               ))}
@@ -517,10 +729,16 @@ function OperatorLoginPage({ onLoggedIn }) {
   const [error, setError] = useState("");
 
   return (
-    <main className="single-page">
+    <main className="auth-layout">
+      <section className="auth-hero card">
+        <h2>Operacao de Entrada</h2>
+        <p>Login exclusivo para leitura e validacao de QR em campo.</p>
+      </section>
       <AdminLoginForm
         loading={loading}
         error={error}
+        title="Entrar como Operador"
+        subtitle="Acesso mobile para controle de entrada."
         onSubmit={async (payload) => {
           setLoading(true);
           setError("");
@@ -608,9 +826,9 @@ function App() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div>
-          <h1>Credenciamento - Setor Cafeeiro</h1>
-          <p>Checkpoint 2 - Publico + Admin + Check-in + QR/PDF + Analytics</p>
+        <div className="brand-block">
+          <h1>Alta Cafe</h1>
+          <p>Sistema oficial de credenciamento e acesso</p>
         </div>
         <nav className="tabs">
           <NavLink to="/" end className={({ isActive }) => (isActive ? "tab active" : "tab")}>

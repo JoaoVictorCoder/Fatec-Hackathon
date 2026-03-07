@@ -19,10 +19,10 @@ const CARBON_FACTORS = Object.freeze({
   GASOLINA: 2.04,
   ALCOOL: 1.51,
   DIESEL: 2.6,
-  ELETRICO: 0.0545,
-  NAO_INFORMADO: 0.18
+  ELETRICO: 0.0545
 });
 const validFuel = new Set(Object.keys(CARBON_FACTORS));
+const DISTANCIA_PADRAO_KM = 250;
 
 const fakeTokens = new Set([
   "teste",
@@ -170,6 +170,7 @@ export function normalizePublicFormPayload(form) {
     cidadeOrigem: normalizeSpaces(form.cidadeOrigem || form.municipio),
     uf: (form.uf || "").trim().toUpperCase(),
     nacionalidade: normalizeSpaces(form.nacionalidade),
+    nacionalidadeEmpresa: normalizeSpaces(form.nacionalidadeEmpresa),
     cpf: digits(form.cpf),
     cnpj: digits(form.cnpj),
     celular: digits(form.celular),
@@ -178,6 +179,7 @@ export function normalizePublicFormPayload(form) {
       form.distanciaKm === "" || form.distanciaKm === null || form.distanciaKm === undefined
         ? null
         : Number(form.distanciaKm),
+    aceitouCompartilhamentoComExpositores: form.aceitouCompartilhamentoComExpositores === true,
     siteEmpresa: normalizeSpaces(form.siteEmpresa),
     nomeEmpresa: normalizeSpaces(form.nomeEmpresa),
     ccir: normalizeSpaces(form.ccir),
@@ -189,15 +191,16 @@ export function normalizePublicFormPayload(form) {
 
 export function resolveDistanceFromCidade(cidadeOrigem) {
   const city = normalizeSpaces(cidadeOrigem);
-  return CIDADES_VIZINHAS_FRANCA[city] ?? null;
+  return CIDADES_VIZINHAS_FRANCA[city] ?? DISTANCIA_PADRAO_KM;
 }
 
 export function calculateCarbonEstimateFront({ cidadeOrigem, combustivel, distanciaKm }) {
   const distance = Number.isFinite(Number(distanciaKm)) && Number(distanciaKm) > 0
     ? Number(distanciaKm)
-    : resolveDistanceFromCidade(cidadeOrigem) ?? 250;
+    : resolveDistanceFromCidade(cidadeOrigem);
   const fuel = (combustivel || "NAO_INFORMADO").toUpperCase();
-  const factor = CARBON_FACTORS[fuel] ?? CARBON_FACTORS.NAO_INFORMADO;
+  const factor = CARBON_FACTORS[fuel] ?? null;
+  if (factor === null) return null;
   return Number((distance * factor).toFixed(3));
 }
 
@@ -230,10 +233,14 @@ export function validatePublicCredenciadoForm(rawForm) {
   if (form.categoria === "VISITANTE" && !form.nacionalidade) {
     errors.nacionalidade = "Informe a nacionalidade";
   }
+
+  if (["EXPOSITOR", "IMPRENSA", "COLABORADOR_TERCEIRIZADO"].includes(form.categoria) && !form.nacionalidadeEmpresa) {
+    errors.nacionalidadeEmpresa = "Informe a nacionalidade da empresa";
+  }
   if (!form.aceitouLgpd) {
     errors.aceitouLgpd = "Voce precisa aceitar os termos da LGPD";
   }
-  if (!validFuel.has(form.combustivel || "NAO_INFORMADO")) {
+  if (form.combustivel && form.combustivel !== "NAO_INFORMADO" && !validFuel.has(form.combustivel)) {
     errors.combustivel = "Selecione um combustivel valido";
   }
 
@@ -293,9 +300,9 @@ export function validatePublicCredenciadoForm(rawForm) {
     }
   }
 
-  const distance = form.distanciaKm ?? resolveDistanceFromCidade(form.cidadeOrigem);
+  const distance = resolveDistanceFromCidade(form.cidadeOrigem || form.municipio);
   const pegada = calculateCarbonEstimateFront({
-    cidadeOrigem: form.cidadeOrigem,
+    cidadeOrigem: form.cidadeOrigem || form.municipio,
     combustivel: form.combustivel,
     distanciaKm: distance
   });

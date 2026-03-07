@@ -75,6 +75,8 @@ export async function listAccessAttempts({
   resultado,
   categoria,
   operatorId,
+  standId,
+  empresaNome,
   credenciadoId,
   dateFrom,
   dateTo
@@ -90,6 +92,8 @@ export async function listAccessAttempts({
   const where = {
     resultado: resultado || undefined,
     operatorId: operatorId || undefined,
+    standId: standId || undefined,
+    empresaNome: empresaNome || undefined,
     createdAt:
       dateFrom || dateTo
         ? {
@@ -125,6 +129,57 @@ export async function listAccessAttempts({
   ]);
 
   return { items, total };
+}
+
+export async function listStandVisitorsReport({
+  standId,
+  operatorId,
+  dateFrom,
+  dateTo,
+  categoria
+} = {}) {
+  const where = {
+    resultado: "ALLOW",
+    standId: standId || undefined,
+    operatorId: operatorId || undefined,
+    createdAt:
+      dateFrom || dateTo
+        ? {
+            gte: dateFrom ? new Date(dateFrom) : undefined,
+            lte: dateTo ? new Date(dateTo) : undefined
+          }
+        : undefined,
+    credencial: categoria
+      ? {
+          credenciado: {
+            categoria
+          }
+        }
+      : undefined
+  };
+
+  return prisma.accessAttempt.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    include: {
+      credencial: {
+        include: {
+          credenciado: {
+            select: {
+              id: true,
+              nomeCompleto: true,
+              email: true,
+              celular: true,
+              categoria: true,
+              municipio: true,
+              uf: true,
+              aceitouCompartilhamentoComExpositores: true
+            }
+          }
+        }
+      }
+    }
+  });
 }
 
 export async function findAccessAttemptById(id) {

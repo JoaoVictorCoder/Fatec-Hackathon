@@ -75,6 +75,7 @@ export default function AdminDashboard({
           <label>
             Secao
             <select
+              className="section-switch"
               value={activeSection}
               onChange={(event) => setActiveSection(event.target.value)}
             >

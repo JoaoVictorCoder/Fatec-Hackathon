@@ -159,34 +159,34 @@ export default function CredenciadoForm({
           min="0"
           step="0.1"
           name="distanciaKm"
-          value={form.distanciaKm}
-          onChange={onChange}
-          onBlur={onBlur}
+          value={form.distanciaKm || resolveDistanceFromCidade(form.cidadeOrigem || form.municipio)}
+          readOnly
           className={showError("distanciaKm") ? "input-error" : ""}
-          placeholder={
-            resolveDistanceFromCidade(form.cidadeOrigem) != null
-              ? String(resolveDistanceFromCidade(form.cidadeOrigem))
-              : "Informe manualmente"
-          }
         />
         {showError("distanciaKm") && <small className="field-error">{errors.distanciaKm}</small>}
+        <small className="hint-text">Distancia preenchida automaticamente pela cidade de origem.</small>
       </label>
 
-      <div className="detail-field">
+      <div className="detail-field full-span">
         <span>{labels.pegadaCarbonoEstimada}</span>
         <strong>
-          {calculateCarbonEstimateFront({
-            cidadeOrigem: form.cidadeOrigem || form.municipio,
-            combustivel: form.combustivel,
-            distanciaKm: form.distanciaKm
-          }).toFixed(3)}{" "}
-          kg CO2e
+          {(() => {
+            const estimate = calculateCarbonEstimateFront({
+              cidadeOrigem: form.cidadeOrigem || form.municipio,
+              combustivel: form.combustivel,
+              distanciaKm: form.distanciaKm
+            });
+            if (estimate === null) {
+              return "Nao calculada (combustivel nao informado)";
+            }
+            return `${estimate.toFixed(3)} kg CO2e`;
+          })()}
         </strong>
         <small>Estimativa simplificada para operacao do evento.</small>
       </div>
 
-      <p className="hint-text">{documentHint(form.categoria)}</p>
-      {errors.documento && <p className="error">{errors.documento}</p>}
+      <p className="hint-text full-span">{documentHint(form.categoria)}</p>
+      {errors.documento && <p className="error full-span">{errors.documento}</p>}
 
       {extraFields.map((field) => (
         <label key={field}>
@@ -201,7 +201,9 @@ export default function CredenciadoForm({
                 ? form.categoria === "VISITANTE"
                 : field !== "siteEmpresa"
             }
-            placeholder={field === "nacionalidade" ? "Brasil" : undefined}
+            placeholder={
+              field === "nacionalidade" || field === "nacionalidadeEmpresa" ? "Brasil" : undefined
+            }
             className={showError(field) ? "input-error" : ""}
           />
           {showError(field) && <small className="field-error">{errors[field]}</small>}
@@ -224,13 +226,25 @@ export default function CredenciadoForm({
         />
         Aceito os termos da LGPD
       </label>
-      {showError("aceitouLgpd") && <small className="field-error">{errors.aceitouLgpd}</small>}
+
+      <label className="checkbox">
+        <input
+          type="checkbox"
+          name="aceitouCompartilhamentoComExpositores"
+          checked={form.aceitouCompartilhamentoComExpositores}
+          onChange={onChange}
+        />
+        Aceito compartilhar meus dados com expositores/stands visitados para contato posterior
+      </label>
+      {showError("aceitouLgpd") && (
+        <small className="field-error full-span">{errors.aceitouLgpd}</small>
+      )}
       <p className="lgpd-text">
         Ao enviar, voce autoriza o tratamento dos seus dados pessoais para fins de
         credenciamento e controle de acesso do evento.
       </p>
 
-      <button type="submit" disabled={saving}>
+      <button type="submit" disabled={saving} className="full-span">
         {saving ? "Salvando..." : "Cadastrar"}
       </button>
     </form>

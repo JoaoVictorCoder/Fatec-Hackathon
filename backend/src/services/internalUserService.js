@@ -24,6 +24,51 @@ function sanitizePermissions(role, permissions) {
   return next;
 }
 
+function sanitizeStand(payload) {
+  const standId = typeof payload?.standId === "string" ? payload.standId.trim() : "";
+  const standName = typeof payload?.standName === "string" ? payload.standName.trim() : "";
+  const empresaNome = typeof payload?.empresaNome === "string" ? payload.empresaNome.trim() : "";
+  const autoStandId = !standId && (standName || empresaNome)
+    ? buildStandId({ standName, empresaNome })
+    : "";
+  return {
+    standId: standId || autoStandId || null,
+    standName: standName || null,
+    empresaNome: empresaNome || null
+  };
+}
+
+function normalizeStandToken(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .toUpperCase();
+}
+
+function buildStandId({ standName, empresaNome }) {
+  const base = normalizeStandToken(standName || empresaNome || "STAND");
+  const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `STAND-${base || "GERAL"}-${suffix}`;
+}
+
+function mapInternalUser(user) {
+  return {
+    id: user.id,
+    nome: user.nome,
+    email: user.email,
+    role: user.role,
+    ativo: user.ativo,
+    standId: user.standId,
+    standName: user.standName,
+    empresaNome: user.empresaNome,
+    permissoesCustomizadas: user.permissoesCustomizadas,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt
+  };
+}
+
 export async function createInternalUserService(payload, actor) {
   const nome = (payload?.nome || "").trim();
   const email = (payload?.email || "").trim().toLowerCase();
@@ -57,6 +102,7 @@ export async function createInternalUserService(payload, actor) {
     passwordHash,
     role,
     ativo: true,
+    ...sanitizeStand(payload),
     permissoesCustomizadas: sanitizePermissions(role, payload?.permissoesCustomizadas)
   });
 
@@ -66,24 +112,21 @@ export async function createInternalUserService(payload, actor) {
     acao: "INTERNAL_USER_CREATE",
     recurso: "ADMIN_USER",
     recursoId: created.id,
-    detalhes: { role: created.role, email: created.email }
+    detalhes: {
+      role: created.role,
+      email: created.email,
+      standId: created.standId,
+      standName: created.standName,
+      empresaNome: created.empresaNome
+    }
   });
 
-  return { user: created };
+  return { user: mapInternalUser(created) };
 }
 
 export async function listInternalUsersService() {
   const users = await listInternalUsers();
-  return users.map((user) => ({
-    id: user.id,
-    nome: user.nome,
-    email: user.email,
-    role: user.role,
-    ativo: user.ativo,
-    permissoesCustomizadas: user.permissoesCustomizadas,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt
-  }));
+  return users.map(mapInternalUser);
 }
 
 export async function updateInternalUserService(id, payload, actor) {
@@ -117,6 +160,10 @@ export async function updateInternalUserService(id, payload, actor) {
     next.permissoesCustomizadas = sanitizePermissions(role, payload.permissoesCustomizadas);
   }
 
+  if ("standId" in (payload || {}) || "standName" in (payload || {}) || "empresaNome" in (payload || {})) {
+    Object.assign(next, sanitizeStand(payload));
+  }
+
   const updated = await updateInternalUser(id, next);
 
   await createAuditLog({
@@ -128,18 +175,7 @@ export async function updateInternalUserService(id, payload, actor) {
     detalhes: { changedFields: Object.keys(next) }
   });
 
-  return {
-    user: {
-      id: updated.id,
-      nome: updated.nome,
-      email: updated.email,
-      role: updated.role,
-      ativo: updated.ativo,
-      permissoesCustomizadas: updated.permissoesCustomizadas,
-      createdAt: updated.createdAt,
-      updatedAt: updated.updatedAt
-    }
-  };
+  return { user: mapInternalUser(updated) };
 }
 
 export async function updateInternalUserActiveService(id, ativo, actor) {
@@ -159,7 +195,7 @@ export async function updateInternalUserActiveService(id, ativo, actor) {
     detalhes: { ativo: Boolean(ativo) }
   });
 
-  return { user: updated };
+  return { user: mapInternalUser(updated) };
 }
 
 export async function updateInternalUserPermissionsService(id, permissions, actor) {
@@ -182,5 +218,5 @@ export async function updateInternalUserPermissionsService(id, permissions, acto
     detalhes: { permissoesCustomizadas: normalized }
   });
 
-  return { user: updated };
+  return { user: mapInternalUser(updated) };
 }

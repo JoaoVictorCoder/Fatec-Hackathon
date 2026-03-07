@@ -244,6 +244,17 @@ export async function getAdminAccessLogs(params = {}) {
   return parseResponse(response);
 }
 
+export async function getAdminStandVisitorsReport(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      query.set(key, String(value));
+    }
+  });
+  const response = await adminFetch(`/admin/reports/stand-visitors?${query.toString()}`);
+  return parseResponse(response);
+}
+
 export async function getAdminBackupStatus() {
   const response = await adminFetch("/admin/backup/status");
   return parseResponse(response);

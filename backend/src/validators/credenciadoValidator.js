@@ -39,12 +39,21 @@ function requiresCpf(categoria) {
   return [Categoria.COMISSAO_ORGANIZADORA].includes(categoria);
 }
 
+function requiresCompanyNationality(categoria) {
+  return [
+    Categoria.EXPOSITOR,
+    Categoria.IMPRENSA,
+    Categoria.COLABORADOR_TERCEIRIZADO
+  ].includes(categoria);
+}
+
 export function validateCredenciadoPayload(payload, options = {}) {
   const allowComissaoOrganizadora = options.allowComissaoOrganizadora === true;
   const errors = [];
 
   const categoria = toCleanString(payload.categoria);
   const nacionalidade = toCleanString(payload.nacionalidade) || null;
+  const nacionalidadeEmpresa = toCleanString(payload.nacionalidadeEmpresa) || null;
   const email = toCleanString(payload.email);
   const celular = toCleanString(payload.celular);
   const municipio = toCleanString(payload.municipio);
@@ -53,6 +62,8 @@ export function validateCredenciadoPayload(payload, options = {}) {
   const cnpj = sanitizeCnpj(payload.cnpj);
   const uf = toCleanString(payload.uf).toUpperCase();
   const pcd = payload.pcd === true;
+  const aceitouCompartilhamentoComExpositores =
+    payload.aceitouCompartilhamentoComExpositores === true;
   const tipoCombustivel = toCleanString(payload.tipoCombustivel).toUpperCase() || null;
   const cidadeOrigem = toCleanString(payload.cidadeOrigem) || municipio;
   const combustivel = toCleanString(payload.combustivel).toUpperCase() || tipoCombustivel || "NAO_INFORMADO";
@@ -135,6 +146,10 @@ export function validateCredenciadoPayload(payload, options = {}) {
     errors.push("nacionalidade e obrigatoria para visitante");
   }
 
+  if (requiresCompanyNationality(categoria) && !nacionalidadeEmpresa) {
+    errors.push("nacionalidadeEmpresa e obrigatoria para esta categoria");
+  }
+
   if (!isVisitanteInternacional && !isValidUf(uf)) {
     errors.push("Selecione uma UF valida");
   }
@@ -194,12 +209,14 @@ export function validateCredenciadoPayload(payload, options = {}) {
       municipio,
       uf,
       nacionalidade: nacionalidade || (categoria === Categoria.VISITANTE ? "Brasil" : null),
+      nacionalidadeEmpresa,
       tipoCombustivel,
       cidadeOrigem,
       combustivel,
       distanciaKm,
       pcd,
       aceitouLgpd: true,
+      aceitouCompartilhamentoComExpositores,
       siteEmpresa: normalizeWebsite(toCleanString(payload.siteEmpresa)),
       nomeEmpresa: toCleanString(payload.nomeEmpresa) || null,
       ccir: toCleanString(payload.ccir) || null,

@@ -13,6 +13,9 @@ export async function operatorMeHandler(req, res) {
       nome: req.auth.nome,
       email: req.auth.email,
       role: req.auth.role,
+      standId: req.auth.standId || null,
+      standName: req.auth.standName || null,
+      empresaNome: req.auth.empresaNome || null,
       permissoesCustomizadas: req.auth.permissoesCustomizadas || {}
     }
   });
@@ -28,7 +31,11 @@ export async function operatorCheckInValidateHandler(req, res) {
     actorType: "APP_GATE",
     actorId: req.auth.id,
     actorName: req.auth.nome,
-    actorRole: req.auth.role
+    actorEmail: req.auth.email,
+    actorRole: req.auth.role,
+    standId: req.auth.standId || null,
+    standName: req.auth.standName || null,
+    empresaNome: req.auth.empresaNome || null
   });
 
   return res.json(

@@ -50,6 +50,7 @@ async function main() {
       pegadaCarbonoEstimada: 583.44,
       pcd: false,
       aceitouLgpd: true,
+      aceitouCompartilhamentoComExpositores: true,
       cnpj: "12345678000199",
       siteEmpresa: "https://cafesdeminas.com.br",
       nomeEmpresa: "Cafes de Minas",
@@ -73,6 +74,7 @@ async function main() {
       pegadaCarbonoEstimada: 735.8,
       pcd: false,
       aceitouLgpd: true,
+      aceitouCompartilhamentoComExpositores: false,
       ccir: "CCIR-000123",
       nomePropriedade: "Sitio Boa Safra",
       statusCredenciamento: "CADASTRADO"
@@ -95,6 +97,7 @@ async function main() {
       pegadaCarbonoEstimada: 72.18,
       pcd: true,
       aceitouLgpd: true,
+      aceitouCompartilhamentoComExpositores: true,
       statusCredenciamento: "CADASTRADO"
     }
   ];
@@ -213,6 +216,9 @@ async function main() {
       nome: "App Gate",
       passwordHash: gateHash,
       role: "OPERADOR_QR",
+      standId: "STAND-JACTO-01",
+      standName: "Stand Jacto",
+      empresaNome: "Jacto",
       permissoesCustomizadas: {
         podeValidarEntrada: true,
         podeVisualizarDadosMinimosCredenciado: true,
@@ -228,6 +234,9 @@ async function main() {
       nome: "App Gate",
       passwordHash: gateHash,
       role: "OPERADOR_QR",
+      standId: "STAND-SRFRANCA-01",
+      standName: "Stand SR Franca",
+      empresaNome: "SR Franca",
       permissoesCustomizadas: {
         podeValidarEntrada: true,
         podeVisualizarDadosMinimosCredenciado: true,
