@@ -39,6 +39,13 @@ python app.py
 
 Backend em: `http://127.0.0.1:5000`
 
+### Banco SQL
+
+O backend usa SQLite via SQLAlchemy.
+
+- Arquivo do banco: `backend/instance/app.db` (criado automaticamente ao iniciar o backend)
+- Tabela inicial: `tasks`
+
 ## 2) Frontend (HTML/CSS/JS)
 
 Em outro terminal:
@@ -54,3 +61,13 @@ Frontend em: `http://127.0.0.1:5500`
 
 - `GET /api/health`
 - `GET /api/message`
+- `GET /api/tasks`
+- `POST /api/tasks`
+
+Exemplo de criacao de task:
+
+```bash
+curl -X POST http://127.0.0.1:5000/api/tasks \
+  -H "Content-Type: application/json" \
+  -d "{\"title\":\"Primeira task\"}"
+```

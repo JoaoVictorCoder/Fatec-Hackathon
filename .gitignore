@@ -4,6 +4,8 @@ __pycache__/
 *.pyo
 *.pyd
 .venv/
+instance/
+*.db
 
 # OS
 .DS_Store
