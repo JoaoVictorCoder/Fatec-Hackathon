@@ -21,6 +21,7 @@ enum StatusCredenciamento {
   APROVADO
   BLOQUEADO
   CHECKED_IN
+  INATIVO
 }
 
 enum StatusCredencial {
@@ -28,6 +29,7 @@ enum StatusCredencial {
   ATIVA
   INATIVA
   UTILIZADA
+  CANCELADA
 }
 
 enum TipoEventoSistema {
@@ -39,7 +41,10 @@ enum TipoEventoSistema {
 }
 
 enum AdminRole {
+  MASTER_ADMIN
   ADMIN
+  OPERADOR_QR
+  LEITOR_CATRACA
   APP_GATE
   SYSTEM
 }
@@ -55,6 +60,8 @@ enum AccessReason {
   JA_UTILIZADA
   FORA_DO_HORARIO
   ACESSO_PERMITIDO
+  CREDENCIAL_CANCELADA
+  CREDENCIAL_INATIVA
 }
 
 enum AuditActorType {
@@ -65,15 +72,22 @@ enum AuditActorType {
 
 model Credenciado {
   id                   String               @id @default(uuid()) @db.Uuid
+  eventoId             String?              @db.Uuid
   categoria            Categoria
   statusCredenciamento StatusCredenciamento @default(CADASTRADO)
   nomeCompleto         String
-  cpf                  String               @unique
-  rg                   String
+  cpf                  String?              @unique
   celular              String
   email                String               @unique
   municipio            String
   uf                   String
+  nacionalidade        String?
+  tipoCombustivel      String?
+  cidadeOrigem         String?
+  combustivel          String?
+  distanciaKm          Float?
+  pegadaCarbonoEstimada Float?
+  pcd                  Boolean              @default(false)
   aceitouLgpd          Boolean
 
   cnpj            String?
@@ -84,13 +98,16 @@ model Credenciado {
   nomeVeiculo     String?
   funcaoCargo     String?
 
-  credencial Credencial?
-  eventos    EventoSistema[]
+  credencial             Credencial?
+  eventos                EventoSistema[]
+  evento                 Evento?                 @relation(fields: [eventoId], references: [id], onDelete: SetNull)
+  descarbonizacaoRegistros DescarbonizacaoRegistro[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([categoria, statusCredenciamento])
+  @@index([eventoId])
 }
 
 model Credencial {
@@ -130,10 +147,12 @@ model AdminUser {
   nome         String
   role         AdminRole @default(ADMIN)
   ativo        Boolean  @default(true)
+  permissoesCustomizadas Json?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   auditLogs    AuditLog[]
+  operatedAccessAttempts AccessAttempt[] @relation("OperatorAccessAttempts")
 }
 
 model AuditLog {
@@ -168,6 +187,11 @@ model AccessAttempt {
   id           String       @id @default(uuid()) @db.Uuid
   credencialId String?      @db.Uuid
   gateDeviceId String?      @db.Uuid
+  operatorId   String?      @db.Uuid
+  operatorNome String?
+  operatorRole String?
+  deviceId     String?
+  deviceInfo   Json?
   accessPoint  String?
   resultado    AccessResult
   motivo       AccessReason
@@ -176,7 +200,39 @@ model AccessAttempt {
 
   credencial Credencial? @relation(fields: [credencialId], references: [id], onDelete: SetNull)
   gateDevice GateDevice? @relation(fields: [gateDeviceId], references: [id], onDelete: SetNull)
+  operator   AdminUser?  @relation("OperatorAccessAttempts", fields: [operatorId], references: [id], onDelete: SetNull)
 
   @@index([credencialId, createdAt])
   @@index([resultado, motivo, createdAt])
+  @@index([operatorId, createdAt])
+  @@index([deviceId, createdAt])
+}
+
+model Evento {
+  id          String       @id @default(uuid()) @db.Uuid
+  nomeEvento  String
+  isGratuito  Boolean      @default(true)
+  ativo       Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  credenciados Credenciado[]
+}
+
+model DescarbonizacaoRegistro {
+  id              String    @id @default(uuid()) @db.Uuid
+  credenciadoId   String    @db.Uuid
+  cidadeOrigem    String
+  cidadeDestino   String    @default("Franca")
+  combustivel     String
+  distanciaKm     Float
+  emissaoKgCo2    Float
+  fatorEmissao    Float
+  metadata        Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  credenciado Credenciado @relation(fields: [credenciadoId], references: [id], onDelete: Cascade)
+
+  @@index([credenciadoId, createdAt])
 }

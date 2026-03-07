@@ -10,7 +10,8 @@
     "prisma:push": "prisma db push",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
-    "seed": "node prisma/seed.js"
+    "seed": "node prisma/seed.js",
+    "backup:export": "node scripts/backup-export.js"
   },
   "dependencies": {
     "@prisma/client": "6.5.0",

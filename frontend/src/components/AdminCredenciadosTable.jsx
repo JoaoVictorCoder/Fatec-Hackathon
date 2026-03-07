@@ -13,7 +13,10 @@ export default function AdminCredenciadosTable({ items, onOpenDetails }) {
             <th>Cidade/UF</th>
             <th>LGPD</th>
             <th>CPF</th>
+            <th>CNPJ</th>
             <th>Credencial</th>
+            <th>Total entradas</th>
+            <th>Ultima entrada</th>
             <th>Cadastro</th>
             <th>Acoes</th>
           </tr>
@@ -23,14 +26,21 @@ export default function AdminCredenciadosTable({ items, onOpenDetails }) {
             <tr key={item.id}>
               <td>{item.nomeCompleto}</td>
               <td>{item.categoria}</td>
-              <td>{item.email}</td>
-              <td>{item.celular}</td>
+              <td>{item.emailMascarado || "-"}</td>
+              <td>{item.celularMascarado || "-"}</td>
               <td>
                 {item.municipio}/{item.uf}
               </td>
               <td>{item.aceitouLgpd ? "Aceito" : "Nao"}</td>
               <td>{item.cpfMascarado}</td>
+              <td>{item.cnpjMascarado || "-"}</td>
               <td>{item.credencial?.codigoUnico || "N/A"}</td>
+              <td>{item.credencial?.totalEntradas ?? 0}</td>
+              <td>
+                {item.credencial?.ultimaEntrada
+                  ? new Date(item.credencial.ultimaEntrada).toLocaleString("pt-BR")
+                  : "-"}
+              </td>
               <td>{new Date(item.createdAt).toLocaleDateString("pt-BR")}</td>
               <td>
                 <div className="table-actions">

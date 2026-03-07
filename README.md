@@ -1,54 +1,84 @@
-# Checkpoint 2 - Plataforma de Credenciamento (Publico + Admin)
+# Checkpoint 2 - Refinamento Operacional + Alinhamento Hackathon
 
-Evolucao incremental sobre o projeto existente, sem recriar do zero.
+Evolucao incremental do projeto existente para uso mais real em evento, mantendo separacao entre area publica e area admin.
 
-## O que foi implementado no Checkpoint 2
+## Principais ajustes desta etapa
 
-- Separacao clara entre area publica e area administrativa.
-- Autenticacao com JWT em cookie HttpOnly e autorizacao por papeis.
-- Papeis: `ADMIN`, `APP_GATE`, `SYSTEM`.
-- DTOs separados para publico/admin/check-in/audit/fraude.
-- Geração de QR Code e PDF da credencial.
-- Fluxo de validacao de acesso/check-in com `ALLOW`/`DENY` e motivo.
-- Arquitetura pronta para integracao de catraca via `GateProvider` (mock).
-- Analytics simples e insights de fraude.
-- LGPD aplicada com minimizacao de dados.
+- Remocao de `RG` do cadastro e do modelo.
+- Documento flexivel por categoria (`CPF`, `CNPJ` ou ambos).
+- `PCD` como classificacao adicional para qualquer categoria.
+- `nacionalidade` para visitante.
+- Consulta publica de status removida (status apenas no admin).
+- PDF da credencial em formato A4 dobravel em 4 paineis.
+- Cores por categoria no PDF.
+- Edicao admin de cadastro.
+- Exclusao logica (inativacao) no admin.
+- Mudanca de status da credencial e reemissao.
+- Check-in ajustado para registrar multiplas entradas sem bloqueio por duplicidade.
+- Auditoria para acoes sensiveis.
+- Entidade `Evento` adicionada e vinculada ao credenciamento.
+- Mapeamento de perfil organizacional alinhado ao enunciado:
+  - `ADMIN` -> `Admin`
+  - `LEITOR_CATRACA` e `APP_GATE` -> `LeitorCatraca`
+- Estrutura hexagonal explicita (incremental):
+  - `src/application/use-cases`
+  - `src/application/ports/in`
+  - `src/application/ports/out`
+  - `src/adapters/out/*`
+- Descarbonizacao mock em background (sem API externa de mapas), com tabela e dashboard admin.
 
-## Estrutura principal
+## Rotas publicas
 
-```txt
-backend/
-  prisma/
-    schema.prisma
-    seed.js
-    migrations/
-      20260307120000_iam_foundation/
-      20260307123000_add_observability_indexes/
-      20260307140000_add_admin_user/
-      20260308100000_checkpoint2_security_access/
-  src/
-    config/
-    controllers/
-    domain/
-    middlewares/
-    mappers/
-    providers/
-      gate/
-      pdf/
-      qrcode/
-    repositories/
-    routes/
-    services/
-    validators/
-frontend/
-  src/
-    api/
-    components/
-    constants/
-    App.jsx
-```
+- `POST /credenciados`
+- `GET /credenciais/:id/pdf`
+- `GET /credenciais/:id/qrcode`
+- `GET /health`
 
-## Modelos atuais (Prisma)
+## Rotas auth
+
+- `POST /auth/login`
+- `POST /auth/operator/login`
+- `POST /auth/logout`
+- `GET /auth/me`
+- `GET /auth/operator/me`
+
+## Rotas admin
+
+- `GET /admin/credenciados`
+- `GET /admin/credenciados/:id`
+- `PUT /admin/credenciados/:id`
+- `PATCH /admin/credenciados/:id/status`
+- `DELETE /admin/credenciados/:id` (exclusao logica)
+- `GET /admin/credenciados/:id/historico`
+- `POST /admin/credenciados/comissao-organizadora`
+- `GET /admin/eventos`
+- `GET /admin/audit-logs`
+- `POST /admin/check-in/validate`
+- `GET /admin/analytics/overview`
+- `GET /admin/analytics/fraud`
+- `GET /admin/analytics/descarbonizacao`
+- `GET /admin/credenciais/:id`
+- `PUT /admin/credenciais/:id`
+- `PATCH /admin/credenciais/:id/status`
+- `POST /admin/credenciais/:id/reemitir`
+- `GET /admin/eventos-cadastro`
+- `GET /admin/users`
+- `POST /admin/users`
+- `PUT /admin/users/:id`
+- `PATCH /admin/users/:id/active`
+- `PATCH /admin/users/:id/permissions`
+- `GET /admin/access-logs`
+- `GET /admin/access-logs/:id`
+- `GET /admin/backup/status`
+- `POST /admin/backup/export`
+
+## Rotas operador
+
+- `GET /operator/me`
+- `POST /operator/check-in/validate`
+- `GET /operator/history-basic`
+
+## Modelos (Prisma)
 
 - `Credenciado`
 - `Credencial`
@@ -57,68 +87,23 @@ frontend/
 - `AuditLog`
 - `GateDevice`
 - `AccessAttempt`
+- `Evento`
+- `DescarbonizacaoRegistro`
 
-## Enums/status
+## Status relevantes
 
-- `Categoria`
-- `StatusCredenciamento`: `CADASTRADO`, `APROVADO`, `BLOQUEADO`, `CHECKED_IN`
-- `StatusCredencial`: `GERADA`, `ATIVA`, `INATIVA`, `UTILIZADA`
-- `TipoEventoSistema`: `CREDENCIAMENTO_CRIADO`, `CREDENCIAL_GERADA`, `DADOS_ATUALIZADOS`, `ACESSO_VALIDADO`, `ACESSO_NEGADO`
-- `AdminRole`: `ADMIN`, `APP_GATE`, `SYSTEM`
-- `AccessResult`: `ALLOW`, `DENY`
-- `AccessReason`: `CREDENCIAL_INVALIDA`, `CREDENCIAL_BLOQUEADA`, `JA_UTILIZADA`, `FORA_DO_HORARIO`, `ACESSO_PERMITIDO`
-- `AuditActorType`: `ADMIN_USER`, `APP_GATE`, `SYSTEM`
+- Credenciamento: `CADASTRADO`, `APROVADO`, `BLOQUEADO`, `CHECKED_IN`, `INATIVO`
+- Credencial: `GERADA`, `ATIVA`, `INATIVA`, `UTILIZADA`, `CANCELADA`
 
-## Rotas
+## LGPD aplicado
 
-Publicas:
-- `POST /credenciados`
-- `GET /credenciados/:id/status`
-- `GET /credenciais/:id/pdf`
-- `GET /credenciais/:id/qrcode`
-- `GET /health`
+- Aceite obrigatorio no cadastro.
+- Minimizacao de dados em respostas publicas.
+- Listagem admin com mascaramento de dados sensiveis.
+- Detalhes completos apenas em area admin autenticada/autorizada.
+- Audit log para acoes administrativas e validacoes de acesso.
 
-Auth:
-- `POST /auth/login`
-- `POST /auth/logout`
-- `GET /auth/me`
-
-Admin protegidas:
-- `GET /admin/credenciados`
-- `GET /admin/credenciados/:id`
-- `GET /admin/credenciados/:id/eventos`
-- `POST /admin/credenciados/comissao-organizadora`
-- `GET /admin/eventos`
-- `GET /admin/audit-logs`
-- `POST /admin/check-in/validate`
-- `GET /admin/analytics/overview`
-- `GET /admin/analytics/fraud`
-- `GET /admin/credenciais/:id`
-
-## LGPD (aplicado)
-
-- Cadastro publico exige `aceitouLgpd = true`.
-- Texto explicito de consentimento no formulario publico.
-- Dados minimizados em respostas publicas.
-- Listagens administrativas protegidas por autenticacao/role.
-- CPF mascarado em listagens administrativas.
-- Dados completos apenas em detalhes administrativos.
-- Trilhas de auditoria para acoes administrativas e check-in.
-- Estrutura preparada para retencao/anonimizacao futura.
-
-## Credenciais seed
-
-Admin:
-- Email: `admin@evento.com`
-- Senha: `Admin@123`
-- Role: `ADMIN`
-
-Gate app:
-- Email: `gate@evento.com`
-- Senha: `Gate@123`
-- Role: `APP_GATE`
-
-## Como rodar local
+## Como rodar
 
 Backend:
 
@@ -127,7 +112,7 @@ cd backend
 cp .env.example .env
 npm install
 npm run prisma:generate
-npm run prisma:migrate:dev -- --name checkpoint2
+npm run prisma:migrate:dev -- --name checkpoint2_refine
 npm run seed
 npm run dev
 ```
@@ -141,34 +126,59 @@ npm install
 npm run dev
 ```
 
-## Como rodar com Docker
+Docker:
 
 ```bash
 docker compose up --build
 ```
 
-- Frontend: `http://localhost:5173`
-- Backend: `http://localhost:3001`
+## Credenciais seed
 
-## Como testar (roteiro rapido)
+- Master Admin: `master@evento.com` / `Master@123`
+- Admin: `admin@evento.com` / `Admin@123`
+- Gate: `gate@evento.com` / `Gate@123`
+- Leitor Catraca: `leitor@evento.com` / `Leitor@123`
 
-1. Cadastro publico em `/`.
-2. Consulte status usando `GET /credenciados/:id/status`.
-3. Abra PDF da credencial: `GET /credenciais/:id/pdf`.
-4. Visualize QR: `GET /credenciais/:id/qrcode`.
-5. Login admin em `/admin/login`.
-6. No painel admin:
-   - lista/busca/filtro de credenciados
-   - detalhes de credenciado
-   - eventos e audit logs
-   - check-in via codigo unico (retorno ALLOW/DENY)
-   - analytics overview e fraude
-7. Consulte credencial interna em `/admin/credenciais/:id`.
+## Perfis e permissoes
 
-## Pendencias/limitacoes atuais
+- `MASTER_ADMIN`: acesso maximo, gestao de usuarios, permissoes, backup.
+- `ADMIN`: operacao administrativa ampla (sem gestao total de usuarios por padrao).
+- `OPERADOR_QR`: operacao mobile de validacao de entrada com permissao customizada por flags.
 
-- Gate provider real ainda nao implementado (apenas mock).
-- Regras de fraude ainda sao heuristicas simples.
-- Sem biometria/hardware real.
-- Sem politica automatica de retencao/anonimizacao.
-- Sem testes automatizados de integracao.
+## Carbono e cidades
+
+- Formulario publico com:
+  - cidade de origem
+  - combustivel
+  - distancia automatica para cidades vizinhas de Franca
+  - pegada de carbono estimada (simplificada)
+- Cidades mapeadas:
+  - Restinga (6.5 km)
+  - Patrocinio Paulista (32.5 km)
+  - Cristais Paulista (30 km)
+  - Ribeirao Corrente (40 km)
+  - Batatais (60 km)
+  - Claraval (37.5 km)
+  - Ibiraci (51.5 km)
+  - Sao Jose da Bela Vista (44 km)
+
+## Backup e contingencia
+
+- Volume de backup: `backup_data` no `docker-compose`.
+- Export manual:
+```bash
+cd backend
+npm run backup:export
+```
+- Export por API (somente `MASTER_ADMIN`):
+  - `POST /admin/backup/export`
+- Status de backup:
+  - `GET /admin/backup/status`
+- Restore simples para demo:
+  - subir banco limpo e importar dados do JSON exportado via script/manual conforme necessidade operacional.
+
+## Limitacoes pendentes
+
+- Layout institucional do PDF usa placeholders para logos.
+- Integracao fisica de catraca continua mock.
+- Sem exclusao fisica como fluxo principal (apenas exclusao logica).

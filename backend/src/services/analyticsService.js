@@ -1,13 +1,12 @@
 import { prisma } from "../prisma.js";
 import {
   aggregateAccessAttempts,
-  countRecentDeniedByGate,
-  findRecentDuplicateQrAttempts
+  countRecentDeniedByGate
 } from "../repositories/accessAttemptRepository.js";
 import { toFraudInsightDTO } from "../mappers/identityMapper.js";
 
 export async function getAnalyticsOverview() {
-  const [totalCredenciados, totalCredenciaisGeradas, accessStats, byCategoria] =
+  const [totalCredenciados, totalCredenciaisGeradas, accessStats, byCategoria, auditCorrections, auditReissue, auditBlock] =
     await Promise.all([
       prisma.credenciado.count(),
       prisma.credencial.count(),
@@ -15,12 +14,24 @@ export async function getAnalyticsOverview() {
       prisma.credenciado.groupBy({
         by: ["categoria"],
         _count: { _all: true }
+      }),
+      prisma.auditLog.count({ where: { acao: "CREDENCIADO_UPDATE" } }),
+      prisma.auditLog.count({ where: { acao: "CREDENCIAL_REEMITIR" } }),
+      prisma.auditLog.count({
+        where: {
+          OR: [
+            { acao: "CREDENCIADO_STATUS_UPDATE" },
+            { acao: "CREDENCIAL_STATUS_UPDATE" }
+          ]
+        }
       })
     ]);
 
   return {
     totalCredenciados,
     totalCredenciaisGeradas,
+    totalEntradasPermitidas: accessStats.allowed,
+    totalEntradasNegadas: accessStats.denied,
     totalCheckInsPermitidos: accessStats.allowed,
     totalCheckInsNegados: accessStats.denied,
     acessosPorCategoria: byCategoria.map((item) => ({
@@ -28,6 +39,9 @@ export async function getAnalyticsOverview() {
       total: item._count._all
     })),
     acessosPorFaixaHorario: accessStats.byHour,
+    totalCadastrosCorrigidosManualmente: auditCorrections,
+    totalCredenciaisReemitidas: auditReissue,
+    totalBloqueios: auditBlock,
     principaisMotivosRecusa: accessStats.byReason
       .filter((item) => item.motivo !== "ACESSO_PERMITIDO")
       .map((item) => ({ motivo: item.motivo, total: item._count._all }))
@@ -36,19 +50,15 @@ export async function getAnalyticsOverview() {
 
 export async function getFraudInsights() {
   const sinceDate = new Date(Date.now() - 10 * 60 * 1000);
-  const [duplicateQr, usedCredentialAttempts, blockedCredentialAttempts, deniedByGate] =
+  const [blockedCredentialAttempts, deniedByGate] =
     await Promise.all([
-      findRecentDuplicateQrAttempts(5),
       prisma.accessAttempt.findMany({
         where: {
-          motivo: "JA_UTILIZADA",
-          createdAt: { gte: sinceDate }
-        },
-        take: 20
-      }),
-      prisma.accessAttempt.findMany({
-        where: {
-          motivo: "CREDENCIAL_BLOQUEADA",
+          OR: [
+            { motivo: "CREDENCIAL_BLOQUEADA" },
+            { motivo: "CREDENCIAL_CANCELADA" },
+            { motivo: "CREDENCIAL_INATIVA" }
+          ],
           createdAt: { gte: sinceDate }
         },
         take: 20
@@ -59,30 +69,6 @@ export async function getFraudInsights() {
     ]);
 
   const insights = [];
-
-  for (const item of duplicateQr) {
-    insights.push(
-      toFraudInsightDTO({
-        type: "DUPLICATE_QR_SHORT_WINDOW",
-        severity: "HIGH",
-        message: "Multiplas tentativas do mesmo QR em curto intervalo",
-        credencialId: item.credencialId,
-        count: item.count
-      })
-    );
-  }
-
-  for (const item of usedCredentialAttempts) {
-    insights.push(
-      toFraudInsightDTO({
-        type: "REUSE_AFTER_USED",
-        severity: "HIGH",
-        message: "Tentativa de reutilizacao de credencial ja utilizada",
-        credencialId: item.credencialId,
-        count: 1
-      })
-    );
-  }
 
   for (const item of blockedCredentialAttempts) {
     insights.push(

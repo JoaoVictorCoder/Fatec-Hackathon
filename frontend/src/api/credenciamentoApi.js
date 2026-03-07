@@ -31,11 +31,6 @@ export async function createCredenciadoPublic(payload) {
   return parseResponse(response);
 }
 
-export async function getPublicCredenciadoStatus(id) {
-  const response = await fetch(`${API_URL}/credenciados/${id}/status`);
-  return parseResponse(response);
-}
-
 export async function getPublicCredencialQr(id) {
   const response = await fetch(`${API_URL}/credenciais/${id}/qrcode`);
   return parseResponse(response);
@@ -90,6 +85,33 @@ export async function getAdminCredenciadoEventos(id) {
   return parseResponse(response);
 }
 
+export async function updateAdminCredenciado(id, payload) {
+  const response = await adminFetch(`/admin/credenciados/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  return parseResponse(response);
+}
+
+export async function patchAdminCredenciadoStatus(id, payload) {
+  const response = await adminFetch(`/admin/credenciados/${id}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  return parseResponse(response);
+}
+
+export async function softDeleteAdminCredenciado(id, motivo = "") {
+  const response = await adminFetch(`/admin/credenciados/${id}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ motivo })
+  });
+  return parseResponse(response);
+}
+
 export async function createAdminComissao(payload) {
   const response = await adminFetch("/admin/credenciados/comissao-organizadora", {
     method: "POST",
@@ -114,6 +136,33 @@ export async function getAdminCredencialById(id) {
   return parseResponse(response);
 }
 
+export async function updateAdminCredencial(id, payload) {
+  const response = await adminFetch(`/admin/credenciais/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  return parseResponse(response);
+}
+
+export async function patchAdminCredencialStatus(id, payload) {
+  const response = await adminFetch(`/admin/credenciais/${id}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  return parseResponse(response);
+}
+
+export async function reissueAdminCredencial(id, payload = {}) {
+  const response = await adminFetch(`/admin/credenciais/${id}/reemitir`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  return parseResponse(response);
+}
+
 export async function getAdminAuditLogs({ page = 1, pageSize = 20 } = {}) {
   const response = await adminFetch(`/admin/audit-logs?page=${page}&pageSize=${pageSize}`);
   return parseResponse(response);
@@ -135,5 +184,102 @@ export async function getAdminAnalyticsOverview() {
 
 export async function getAdminAnalyticsFraud() {
   const response = await adminFetch("/admin/analytics/fraud");
+  return parseResponse(response);
+}
+
+export async function getAdminAnalyticsDescarbonizacao() {
+  const response = await adminFetch("/admin/analytics/descarbonizacao");
+  return parseResponse(response);
+}
+
+export async function getAdminUsers() {
+  const response = await adminFetch("/admin/users");
+  return parseResponse(response);
+}
+
+export async function createAdminUser(payload) {
+  const response = await adminFetch("/admin/users", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  return parseResponse(response);
+}
+
+export async function updateAdminUser(id, payload) {
+  const response = await adminFetch(`/admin/users/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  return parseResponse(response);
+}
+
+export async function patchAdminUserActive(id, ativo) {
+  const response = await adminFetch(`/admin/users/${id}/active`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ativo })
+  });
+  return parseResponse(response);
+}
+
+export async function patchAdminUserPermissions(id, permissoesCustomizadas) {
+  const response = await adminFetch(`/admin/users/${id}/permissions`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ permissoesCustomizadas })
+  });
+  return parseResponse(response);
+}
+
+export async function getAdminAccessLogs(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      query.set(key, String(value));
+    }
+  });
+  const response = await adminFetch(`/admin/access-logs?${query.toString()}`);
+  return parseResponse(response);
+}
+
+export async function getAdminBackupStatus() {
+  const response = await adminFetch("/admin/backup/status");
+  return parseResponse(response);
+}
+
+export async function exportAdminBackup() {
+  const response = await adminFetch("/admin/backup/export", {
+    method: "POST"
+  });
+  return parseResponse(response);
+}
+
+export async function operatorLogin(payload) {
+  const response = await adminFetch("/auth/operator/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  return parseResponse(response);
+}
+
+export async function operatorMe() {
+  const response = await adminFetch("/operator/me");
+  return parseResponse(response);
+}
+
+export async function operatorValidateCheckIn(payload) {
+  const response = await adminFetch("/operator/check-in/validate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  return parseResponse(response);
+}
+
+export async function operatorHistoryBasic() {
+  const response = await adminFetch("/operator/history-basic");
   return parseResponse(response);
 }

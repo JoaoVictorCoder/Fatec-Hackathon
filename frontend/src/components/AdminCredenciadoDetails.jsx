@@ -1,3 +1,6 @@
+import { useState } from "react";
+import { adminComissaoCategoria, categoriaOptions } from "../constants/formConfig";
+
 function Field({ label, value }) {
   return (
     <div className="detail-field">
@@ -7,7 +10,42 @@ function Field({ label, value }) {
   );
 }
 
-export default function AdminCredenciadoDetails({ credenciado, eventos, onClose }) {
+export default function AdminCredenciadoDetails({
+  credenciado,
+  eventos,
+  onClose,
+  onSave,
+  onSoftDelete,
+  onCredentialStatusChange,
+  onReissue
+}) {
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+  const [editMode, setEditMode] = useState(false);
+  const [form, setForm] = useState({
+    nomeCompleto: credenciado?.nomeCompleto || "",
+    categoria: credenciado?.categoria || "",
+    cpf: credenciado?.cpf || "",
+    cnpj: credenciado?.cnpj || "",
+    celular: credenciado?.celular || "",
+    email: credenciado?.email || "",
+    municipio: credenciado?.municipio || "",
+    uf: credenciado?.uf || "",
+    nomeEmpresa: credenciado?.nomeEmpresa || "",
+    siteEmpresa: credenciado?.siteEmpresa || "",
+    nomeVeiculo: credenciado?.nomeVeiculo || "",
+    nomePropriedade: credenciado?.nomePropriedade || "",
+    ccir: credenciado?.ccir || "",
+    funcaoCargo: credenciado?.funcaoCargo || "",
+    nacionalidade: credenciado?.nacionalidade || "",
+    tipoCombustivel: credenciado?.tipoCombustivel || "NAO_INFORMADO",
+    cidadeOrigem: credenciado?.cidadeOrigem || "",
+    combustivel: credenciado?.combustivel || "NAO_INFORMADO",
+    distanciaKm: credenciado?.distanciaKm || "",
+    pegadaCarbonoEstimada: credenciado?.pegadaCarbonoEstimada || "",
+    aceitouLgpd: credenciado?.aceitouLgpd === true,
+    pcd: credenciado?.pcd === true
+  });
+
   if (!credenciado) {
     return null;
   }
@@ -22,6 +60,119 @@ export default function AdminCredenciadoDetails({ credenciado, eventos, onClose 
           </button>
         </div>
 
+        <div className="toolbar">
+          <button type="button" onClick={() => setEditMode((v) => !v)}>
+            {editMode ? "Cancelar edicao" : "Editar cadastro"}
+          </button>
+          <button type="button" onClick={onSoftDelete}>
+            Inativar cadastro
+          </button>
+          <button
+            type="button"
+            onClick={() => onCredentialStatusChange("INATIVA")}
+          >
+            Bloquear credencial
+          </button>
+          <button
+            type="button"
+            onClick={() => onCredentialStatusChange("ATIVA")}
+          >
+            Reativar credencial
+          </button>
+          <button type="button" onClick={onReissue}>
+            Reemitir credencial
+          </button>
+          {credenciado?.credencial?.id && (
+            <a
+              className="link-button"
+              href={`${API_URL}/credenciais/${credenciado.credencial.id}/pdf`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Baixar PDF
+            </a>
+          )}
+        </div>
+
+        {editMode && (
+          <form
+            className="grid"
+            onSubmit={(event) => {
+              event.preventDefault();
+              onSave(form);
+              setEditMode(false);
+            }}
+          >
+            <label>
+              Categoria
+              <select
+                value={form.categoria}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, categoria: event.target.value }))
+                }
+              >
+                {[...categoriaOptions, adminComissaoCategoria].map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {[
+              ["nomeCompleto", "Nome completo"],
+              ["cpf", "CPF"],
+              ["cnpj", "CNPJ"],
+              ["celular", "Celular"],
+              ["email", "E-mail"],
+              ["municipio", "Municipio"],
+              ["uf", "UF"],
+              ["nacionalidade", "Nacionalidade"],
+              ["tipoCombustivel", "Tipo combustivel"],
+              ["cidadeOrigem", "Cidade origem"],
+              ["combustivel", "Combustivel"],
+              ["distanciaKm", "Distancia km"],
+              ["pegadaCarbonoEstimada", "Pegada CO2 estimada"],
+              ["siteEmpresa", "Site da empresa"],
+              ["nomeEmpresa", "Nome da empresa"],
+              ["nomeVeiculo", "Nome do veiculo"],
+              ["nomePropriedade", "Nome da propriedade"],
+              ["ccir", "CCIR"],
+              ["funcaoCargo", "Funcao/Cargo"]
+            ].map(([field, label]) => (
+              <label key={field}>
+                {label}
+                <input
+                  value={form[field] || ""}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, [field]: event.target.value }))
+                  }
+                />
+              </label>
+            ))}
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={form.pcd}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, pcd: event.target.checked }))
+                }
+              />
+              PCD
+            </label>
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={form.aceitouLgpd}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, aceitouLgpd: event.target.checked }))
+                }
+              />
+              Aceitou LGPD
+            </label>
+            <button type="submit">Salvar alteracoes</button>
+          </form>
+        )}
+
         <div className="details-grid">
           <Field label="Nome completo" value={credenciado.nomeCompleto} />
           <Field label="Categoria" value={credenciado.categoria} />
@@ -30,8 +181,16 @@ export default function AdminCredenciadoDetails({ credenciado, eventos, onClose 
           <Field label="Celular" value={credenciado.celular} />
           <Field label="Municipio/UF" value={`${credenciado.municipio}/${credenciado.uf}`} />
           <Field label="CPF" value={credenciado.cpf} />
-          <Field label="RG" value={credenciado.rg} />
+          <Field label="CNPJ" value={credenciado.cnpj} />
+          <Field label="Nacionalidade" value={credenciado.nacionalidade} />
+          <Field label="Tipo combustivel" value={credenciado.tipoCombustivel} />
+          <Field label="Cidade origem" value={credenciado.cidadeOrigem} />
+          <Field label="Combustivel" value={credenciado.combustivel} />
+          <Field label="Distancia km" value={credenciado.distanciaKm} />
+          <Field label="Pegada CO2" value={credenciado.pegadaCarbonoEstimada} />
+          <Field label="PCD" value={credenciado.pcd ? "Sim" : "Nao"} />
           <Field label="LGPD" value={credenciado.aceitouLgpd ? "Aceito" : "Nao"} />
+          <Field label="Evento" value={credenciado.evento?.nomeEvento} />
           <Field label="Codigo da credencial" value={credenciado.credencial?.codigoUnico} />
           <Field label="Status da credencial" value={credenciado.credencial?.statusCredencial} />
           <Field label="Funcao/Cargo" value={credenciado.funcaoCargo} />

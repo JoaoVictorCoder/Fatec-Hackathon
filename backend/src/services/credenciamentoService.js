@@ -12,6 +12,8 @@ import {
 } from "../repositories/credencialRepository.js";
 import { createEventoSistema } from "../repositories/eventoSistemaRepository.js";
 import { createAuditLog } from "../repositories/auditLogRepository.js";
+import { findOrCreateDefaultEvento } from "../repositories/eventoRepository.js";
+import { calculateCarbonEstimate } from "./descarbonizacaoService.js";
 
 async function generateUniqueCredentialCode(tx) {
   for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -35,9 +37,21 @@ function buildQrPayload({ credenciadoId, credentialCode }) {
 
 export async function createCredenciamento(identityPayload, actor = null) {
   return prisma.$transaction(async (tx) => {
+    const evento = await findOrCreateDefaultEvento(tx);
+    const carbon = calculateCarbonEstimate({
+      cidadeOrigem: identityPayload.cidadeOrigem || identityPayload.municipio,
+      combustivel: identityPayload.combustivel || identityPayload.tipoCombustivel,
+      distanciaKm: identityPayload.distanciaKm
+    });
+
     const createdCredenciado = await createCredenciado(
       {
         ...identityPayload,
+        eventoId: identityPayload.eventoId || evento.id,
+        cidadeOrigem: carbon.cidadeOrigem,
+        combustivel: carbon.combustivel,
+        distanciaKm: carbon.distanciaKm,
+        pegadaCarbonoEstimada: carbon.pegadaCarbonoEstimada,
         statusCredenciamento: StatusCredenciamento.CADASTRADO
       },
       tx
@@ -67,7 +81,8 @@ export async function createCredenciamento(identityPayload, actor = null) {
         descricao: "Credenciamento criado com sucesso",
         metadata: {
           categoria: createdCredenciado.categoria,
-          statusCredenciamento: createdCredenciado.statusCredenciamento
+          statusCredenciamento: createdCredenciado.statusCredenciamento,
+          eventoId: createdCredenciado.eventoId
         }
       },
       tx
@@ -95,7 +110,8 @@ export async function createCredenciamento(identityPayload, actor = null) {
         recursoId: createdCredenciado.id,
         detalhes: {
           categoria: createdCredenciado.categoria,
-          credencialId: credencial.id
+          credencialId: credencial.id,
+          pegadaCarbonoEstimada: createdCredenciado.pegadaCarbonoEstimada
         }
       },
       tx

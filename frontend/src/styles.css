@@ -65,6 +65,7 @@ body {
 
 .single-page {
   display: grid;
+  gap: 12px;
 }
 
 .auth-card {
@@ -100,6 +101,13 @@ button {
   padding: 8px 10px;
 }
 
+textarea {
+  border: 1px solid #b8c4d1;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-family: inherit;
+}
+
 button {
   cursor: pointer;
   background: #1554c0;
@@ -123,6 +131,16 @@ button:disabled {
 
 .error {
   color: #b00020;
+}
+
+.input-error {
+  border-color: #b00020;
+  background: #fff6f7;
+}
+
+.field-error {
+  color: #b00020;
+  font-size: 12px;
 }
 
 .success {
@@ -277,6 +295,12 @@ button:disabled {
   color: #324a61;
 }
 
+.hint-text {
+  margin: 0;
+  font-size: 12px;
+  color: #4b5f74;
+}
+
 .qr-section {
   margin-top: 12px;
 }
@@ -309,6 +333,11 @@ button:disabled {
 .loading-screen {
   width: min(1100px, 94vw);
   margin: 24px auto;
+}
+
+.operator-page {
+  max-width: 540px;
+  margin: 0 auto;
 }
 
 .admin-header {

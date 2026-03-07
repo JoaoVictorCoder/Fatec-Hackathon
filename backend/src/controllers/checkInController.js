@@ -1,6 +1,9 @@
 import { toCheckInResponseDTO } from "../mappers/identityMapper.js";
 import { validateAndCheckIn } from "../services/checkInService.js";
 import { validateCheckInRequestDTO } from "../validators/checkInValidator.js";
+import { ValidateCheckInUseCase } from "../application/use-cases/validateCheckInUseCase.js";
+
+const validateCheckInUseCase = new ValidateCheckInUseCase({ validateAndCheckIn });
 
 export async function validateCheckInHandler(req, res) {
   const validation = validateCheckInRequestDTO(req.body || {});
@@ -8,9 +11,16 @@ export async function validateCheckInHandler(req, res) {
     return res.status(400).json({ errors: validation.errors });
   }
 
-  const result = await validateAndCheckIn(validation.data, {
-    actorType: req.auth?.role === "APP_GATE" ? "APP_GATE" : "ADMIN_USER",
-    actorId: req.auth?.id
+  const result = await validateCheckInUseCase.execute(validation.data, {
+    actorType:
+      req.auth?.role === "APP_GATE" ||
+      req.auth?.role === "LEITOR_CATRACA" ||
+      req.auth?.role === "OPERADOR_QR"
+        ? "APP_GATE"
+        : "ADMIN_USER",
+    actorId: req.auth?.id,
+    actorName: req.auth?.nome,
+    actorRole: req.auth?.role
   });
 
   return res.json(

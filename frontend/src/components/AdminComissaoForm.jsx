@@ -4,11 +4,13 @@ import { labels } from "../constants/formConfig";
 const initialState = {
   nomeCompleto: "",
   cpf: "",
-  rg: "",
+  cnpj: "",
   celular: "",
   email: "",
   municipio: "",
   uf: "",
+  nacionalidade: "Brasil",
+  pcd: false,
   funcaoCargo: "",
   aceitouLgpd: true
 };
@@ -44,11 +46,12 @@ export default function AdminComissaoForm({ onCreate, loading, onClose, error })
           {[
             "nomeCompleto",
             "cpf",
-            "rg",
+            "cnpj",
             "celular",
             "email",
             "municipio",
             "uf",
+            "nacionalidade",
             "funcaoCargo"
           ].map((field) => (
             <label key={field}>
@@ -62,6 +65,16 @@ export default function AdminComissaoForm({ onCreate, loading, onClose, error })
               />
             </label>
           ))}
+
+          <label className="checkbox">
+            <input
+              type="checkbox"
+              name="pcd"
+              checked={form.pcd}
+              onChange={onChange}
+            />
+            PCD
+          </label>
 
           <label className="checkbox">
             <input

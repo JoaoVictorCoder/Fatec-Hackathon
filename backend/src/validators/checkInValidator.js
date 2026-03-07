@@ -5,6 +5,13 @@ export function validateCheckInRequestDTO(payload) {
   const codigoUnico = typeof payload?.codigoUnico === "string" ? payload.codigoUnico.trim() : "";
   const gateCode = typeof payload?.gateCode === "string" ? payload.gateCode.trim() : "";
   const accessPoint = typeof payload?.accessPoint === "string" ? payload.accessPoint.trim() : "";
+  const deviceId = typeof payload?.deviceId === "string" ? payload.deviceId.trim() : "";
+  const deviceInfo =
+    payload?.deviceInfo && typeof payload.deviceInfo === "object" ? payload.deviceInfo : null;
+  const observacaoOperacional =
+    typeof payload?.observacaoOperacional === "string"
+      ? payload.observacaoOperacional.trim()
+      : "";
 
   if (!codigoUnico) {
     errors.push("codigoUnico e obrigatorio");
@@ -22,7 +29,10 @@ export function validateCheckInRequestDTO(payload) {
     data: {
       codigoUnico,
       gateCode,
-      accessPoint: accessPoint || gateCode
+      accessPoint: accessPoint || gateCode,
+      deviceId: deviceId || null,
+      deviceInfo,
+      observacaoOperacional: observacaoOperacional || null
     }
   };
 }

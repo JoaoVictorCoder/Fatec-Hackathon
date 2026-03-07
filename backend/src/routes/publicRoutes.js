@@ -1,9 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../middlewares/asyncHandler.js";
-import {
-  createCredenciadoPublicHandler,
-  getCredenciadoPublicStatusHandler
-} from "../controllers/credenciadoController.js";
+import { createCredenciadoPublicHandler } from "../controllers/credenciadoController.js";
 import {
   getCredencialPublicPdfHandler,
   getCredencialPublicQrHandler
@@ -16,9 +13,5 @@ publicRouter.get("/health", (_req, res) => {
 });
 
 publicRouter.post("/credenciados", asyncHandler(createCredenciadoPublicHandler));
-publicRouter.get(
-  "/credenciados/:id/status",
-  asyncHandler(getCredenciadoPublicStatusHandler)
-);
 publicRouter.get("/credenciais/:id/pdf", asyncHandler(getCredencialPublicPdfHandler));
 publicRouter.get("/credenciais/:id/qrcode", asyncHandler(getCredencialPublicQrHandler));

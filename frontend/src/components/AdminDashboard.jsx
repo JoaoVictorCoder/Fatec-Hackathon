@@ -23,6 +23,10 @@ export default function AdminDashboard({
   selectedDetails,
   selectedEvents,
   onCloseDetails,
+  onSaveDetails,
+  onSoftDeleteDetails,
+  onCredentialStatusChange,
+  onReissueCredential,
   onCreateComissao,
   creatingComissao,
   createComissaoError,
@@ -32,7 +36,8 @@ export default function AdminDashboard({
   checkInResult,
   checkInLoading,
   analyticsOverview,
-  analyticsFraud
+  analyticsFraud,
+  analyticsDescarbonizacao
 }) {
   const [showComissaoForm, setShowComissaoForm] = useState(false);
   const [activeSection, setActiveSection] = useState("credenciados");
@@ -172,7 +177,7 @@ export default function AdminDashboard({
 
         {activeSection === "checkin" && (
           <>
-            <h3>Validacao de QR / Check-in</h3>
+            <h3>Controle de Entrada (QR / Check-in)</h3>
             <form
               className="grid"
               onSubmit={(event) => {
@@ -258,6 +263,26 @@ export default function AdminDashboard({
                 </li>
               ))}
             </ul>
+
+            {analyticsDescarbonizacao?.resumo && (
+              <>
+                <h4>Descarbonizacao (mock)</h4>
+                <div className="admin-stats">
+                  <article className="stat-card">
+                    <strong>Registros</strong>
+                    <span>{analyticsDescarbonizacao.resumo.totalRegistros}</span>
+                  </article>
+                  <article className="stat-card">
+                    <strong>Media CO2 (kg)</strong>
+                    <span>{Number(analyticsDescarbonizacao.resumo.mediaEmissaoKgCo2 || 0).toFixed(2)}</span>
+                  </article>
+                  <article className="stat-card">
+                    <strong>Media distancia (km)</strong>
+                    <span>{Number(analyticsDescarbonizacao.resumo.mediaDistanciaKm || 0).toFixed(0)}</span>
+                  </article>
+                </div>
+              </>
+            )}
           </>
         )}
       </section>
@@ -267,6 +292,10 @@ export default function AdminDashboard({
           credenciado={selectedDetails}
           eventos={selectedEvents}
           onClose={onCloseDetails}
+          onSave={onSaveDetails}
+          onSoftDelete={onSoftDeleteDetails}
+          onCredentialStatusChange={onCredentialStatusChange}
+          onReissue={onReissueCredential}
         />
       )}
 

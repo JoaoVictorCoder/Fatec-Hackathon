@@ -12,22 +12,28 @@ export const adminComissaoCategoria = {
 };
 
 export const categoryExtraFields = {
-  EXPOSITOR: ["cnpj", "siteEmpresa", "nomeEmpresa"],
-  CAFEICULTOR: ["ccir", "nomePropriedade"],
-  VISITANTE: [],
-  IMPRENSA: ["cnpj", "nomeVeiculo", "siteEmpresa"],
+  EXPOSITOR: ["nomeEmpresa", "siteEmpresa"],
+  CAFEICULTOR: ["nomePropriedade", "ccir"],
+  VISITANTE: ["nacionalidade"],
+  IMPRENSA: ["nomeVeiculo", "siteEmpresa"],
   COMISSAO_ORGANIZADORA: ["funcaoCargo"],
-  COLABORADOR_TERCEIRIZADO: ["cnpj", "nomeEmpresa", "funcaoCargo"]
+  COLABORADOR_TERCEIRIZADO: ["nomeEmpresa", "funcaoCargo"]
 };
 
 export const labels = {
   nomeCompleto: "Nome completo",
   cpf: "CPF",
-  rg: "RG",
   celular: "Celular",
   email: "E-mail",
   municipio: "Municipio",
   uf: "UF",
+  nacionalidade: "Nacionalidade",
+  tipoCombustivel: "Tipo de combustivel",
+  cidadeOrigem: "Cidade de origem",
+  combustivel: "Combustivel",
+  distanciaKm: "Distancia ate o evento (km)",
+  pegadaCarbonoEstimada: "Pegada de carbono estimada",
+  pcd: "Pessoa com Deficiencia (PCD)",
   cnpj: "CNPJ",
   siteEmpresa: "Site da empresa",
   nomeEmpresa: "Nome da empresa",
@@ -39,8 +45,6 @@ export const labels = {
 
 export const commonFields = [
   "nomeCompleto",
-  "cpf",
-  "rg",
   "celular",
   "email",
   "municipio",
@@ -51,13 +55,19 @@ export const baseForm = {
   categoria: "EXPOSITOR",
   nomeCompleto: "",
   cpf: "",
-  rg: "",
+  cnpj: "",
   celular: "",
   email: "",
   municipio: "",
   uf: "",
+  cidadeOrigem: "",
+  combustivel: "NAO_INFORMADO",
+  distanciaKm: "",
+  pegadaCarbonoEstimada: "",
+  nacionalidade: "",
+  tipoCombustivel: "NAO_INFORMADO",
+  pcd: false,
   aceitouLgpd: false,
-  cnpj: "",
   siteEmpresa: "",
   nomeEmpresa: "",
   ccir: "",

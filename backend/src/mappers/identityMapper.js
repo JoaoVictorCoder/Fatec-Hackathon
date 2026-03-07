@@ -8,6 +8,8 @@ export function mapCredencialSummary(credencial) {
     codigoUnico: credencial.codigoUnico,
     statusCredencial: credencial.statusCredencial,
     emitidaEm: credencial.emitidaEm,
+    totalEntradas: credencial._count?.accessAttempts ?? undefined,
+    ultimaEntrada: credencial.accessAttempts?.[0]?.createdAt ?? null,
     createdAt: credencial.createdAt,
     updatedAt: credencial.updatedAt
   };
@@ -15,10 +17,38 @@ export function mapCredencialSummary(credencial) {
 
 function maskCpf(cpf) {
   const digits = (cpf || "").replace(/\D/g, "");
+  if (!digits) {
+    return null;
+  }
   if (digits.length < 4) {
     return "***";
   }
   return `***.***.***-${digits.slice(-2)}`;
+}
+
+function maskCnpj(cnpj) {
+  const digits = (cnpj || "").replace(/\D/g, "");
+  if (digits.length < 4) {
+    return "***";
+  }
+  return `**.***.***/****-${digits.slice(-2)}`;
+}
+
+function maskEmail(email) {
+  const value = (email || "").trim();
+  const [name, domain] = value.split("@");
+  if (!name || !domain) {
+    return "***";
+  }
+  return `${name.slice(0, 2)}***@${domain}`;
+}
+
+function maskPhone(phone) {
+  const digits = (phone || "").replace(/\D/g, "");
+  if (digits.length < 4) {
+    return "***";
+  }
+  return `***${digits.slice(-4)}`;
 }
 
 export function mapCredenciadoIdentity(credenciado) {
@@ -32,13 +62,19 @@ export function mapCredenciadoIdentity(credenciado) {
     statusCredenciamento: credenciado.statusCredenciamento,
     nomeCompleto: credenciado.nomeCompleto,
     cpf: credenciado.cpf,
-    rg: credenciado.rg,
+    cnpj: credenciado.cnpj,
     celular: credenciado.celular,
     email: credenciado.email,
     municipio: credenciado.municipio,
     uf: credenciado.uf,
+    nacionalidade: credenciado.nacionalidade,
+    tipoCombustivel: credenciado.tipoCombustivel,
+    cidadeOrigem: credenciado.cidadeOrigem,
+    combustivel: credenciado.combustivel,
+    distanciaKm: credenciado.distanciaKm,
+    pegadaCarbonoEstimada: credenciado.pegadaCarbonoEstimada,
+    pcd: credenciado.pcd,
     aceitouLgpd: credenciado.aceitouLgpd,
-    cnpj: credenciado.cnpj,
     siteEmpresa: credenciado.siteEmpresa,
     nomeEmpresa: credenciado.nomeEmpresa,
     ccir: credenciado.ccir,
@@ -47,6 +83,13 @@ export function mapCredenciadoIdentity(credenciado) {
     funcaoCargo: credenciado.funcaoCargo,
     createdAt: credenciado.createdAt,
     updatedAt: credenciado.updatedAt,
+    evento: credenciado.evento
+      ? {
+          id: credenciado.evento.id,
+          nomeEvento: credenciado.evento.nomeEvento,
+          isGratuito: credenciado.evento.isGratuito
+        }
+      : null,
     credencial: mapCredencialSummary(credenciado.credencial)
   };
 }
@@ -58,6 +101,12 @@ export function mapPublicCredenciamentoResult(credenciado) {
     categoria: credenciado.categoria,
     statusCredenciamento: credenciado.statusCredenciamento,
     aceitouLgpd: credenciado.aceitouLgpd,
+    evento: credenciado.evento
+      ? {
+          id: credenciado.evento.id,
+          nomeEvento: credenciado.evento.nomeEvento
+        }
+      : null,
     credencial: credenciado.credencial
       ? {
           id: credenciado.credencial.id,
@@ -79,12 +128,20 @@ export function mapAdminCredenciadoListItem(credenciado) {
     id: credenciado.id,
     nomeCompleto: credenciado.nomeCompleto,
     categoria: credenciado.categoria,
-    email: credenciado.email,
-    celular: credenciado.celular,
+    emailMascarado: maskEmail(credenciado.email),
+    celularMascarado: maskPhone(credenciado.celular),
     municipio: credenciado.municipio,
     uf: credenciado.uf,
     aceitouLgpd: credenciado.aceitouLgpd,
     cpfMascarado: maskCpf(credenciado.cpf),
+    cnpjMascarado: credenciado.cnpj ? maskCnpj(credenciado.cnpj) : null,
+    nacionalidade: credenciado.nacionalidade,
+    tipoCombustivel: credenciado.tipoCombustivel,
+    cidadeOrigem: credenciado.cidadeOrigem,
+    combustivel: credenciado.combustivel,
+    distanciaKm: credenciado.distanciaKm,
+    pegadaCarbonoEstimada: credenciado.pegadaCarbonoEstimada,
+    pcd: credenciado.pcd,
     statusCredenciamento: credenciado.statusCredenciamento,
     createdAt: credenciado.createdAt,
     credencial: mapCredencialSummary(credenciado.credencial)
@@ -141,6 +198,7 @@ export function toCheckInResponseDTO({
   credenciado
 }) {
   return {
+    tipoRegistro: "ENTRADA",
     resultado: allowed ? "ALLOW" : "DENY",
     motivo: reason,
     credencialId: credencialId || null,

@@ -1,7 +1,18 @@
 import { prisma } from "../prisma.js";
 
 const includeIdentity = {
-  credencial: true
+  evento: true,
+  credencial: {
+    include: {
+      _count: {
+        select: { accessAttempts: true }
+      },
+      accessAttempts: {
+        orderBy: { createdAt: "desc" },
+        take: 1
+      }
+    }
+  }
 };
 
 export async function createCredenciado(data, tx = prisma) {
@@ -26,7 +37,10 @@ export async function listCredenciadosPaginated({
     OR: search
       ? [
           { nomeCompleto: { contains: search, mode: "insensitive" } },
-          { email: { contains: search, mode: "insensitive" } }
+          { email: { contains: search, mode: "insensitive" } },
+          { cpf: { contains: search.replace(/\D/g, "") || search, mode: "insensitive" } },
+          { cnpj: { contains: search.replace(/\D/g, "") || search, mode: "insensitive" } },
+          { credencial: { codigoUnico: { contains: search, mode: "insensitive" } } }
         ]
       : undefined
   };
@@ -48,6 +62,14 @@ export async function listCredenciadosPaginated({
 export async function findCredenciadoById(id) {
   return prisma.credenciado.findUnique({
     where: { id },
+    include: includeIdentity
+  });
+}
+
+export async function updateCredenciadoById(id, data, tx = prisma) {
+  return tx.credenciado.update({
+    where: { id },
+    data,
     include: includeIdentity
   });
 }

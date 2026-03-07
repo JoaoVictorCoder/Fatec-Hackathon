@@ -32,7 +32,8 @@ export async function authenticateAdmin({ email, senha }) {
       id: user.id,
       email: user.email,
       nome: user.nome,
-      role: user.role
+      role: user.role,
+      permissoesCustomizadas: user.permissoesCustomizadas
     }
   };
 }

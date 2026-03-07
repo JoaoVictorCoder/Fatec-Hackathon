@@ -1,0 +1,18 @@
+-- AlterEnum
+ALTER TYPE "StatusCredenciamento" ADD VALUE IF NOT EXISTS 'INATIVO';
+
+-- AlterEnum
+ALTER TYPE "StatusCredencial" ADD VALUE IF NOT EXISTS 'CANCELADA';
+
+-- AlterEnum
+ALTER TYPE "AccessReason" ADD VALUE IF NOT EXISTS 'CREDENCIAL_CANCELADA';
+ALTER TYPE "AccessReason" ADD VALUE IF NOT EXISTS 'CREDENCIAL_INATIVA';
+
+-- AlterTable
+ALTER TABLE "Credenciado"
+  ADD COLUMN "nacionalidade" TEXT,
+  ADD COLUMN "pcd" BOOLEAN NOT NULL DEFAULT false,
+  ALTER COLUMN "cpf" DROP NOT NULL;
+
+-- DropColumn
+ALTER TABLE "Credenciado" DROP COLUMN IF EXISTS "rg";

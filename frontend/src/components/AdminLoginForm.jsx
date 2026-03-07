@@ -1,13 +1,19 @@
 import { useState } from "react";
 
-export default function AdminLoginForm({ onSubmit, loading, error }) {
+export default function AdminLoginForm({
+  onSubmit,
+  loading,
+  error,
+  title = "Login Administrativo",
+  subtitle = "Area restrita para equipe organizadora."
+}) {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
 
   return (
     <section className="card auth-card">
-      <h2>Login Administrativo</h2>
-      <p>Area restrita para equipe organizadora.</p>
+      <h2>{title}</h2>
+      <p>{subtitle}</p>
 
       <form
         className="grid single-column"

@@ -11,8 +11,20 @@ import {
   mapPublicCredenciamentoResult
 } from "../mappers/identityMapper.js";
 import { createCredenciamento } from "../services/credenciamentoService.js";
+import { enqueueDescarbonizacaoProcess } from "../services/descarbonizacaoService.js";
+import {
+  softDeleteCredenciadoAdmin,
+  updateCredenciadoAdmin,
+  updateCredenciadoStatusAdmin
+} from "../services/adminManagementService.js";
 import { validateCredenciadoPayload } from "../validators/credenciadoValidator.js";
-import { Categoria } from "../domain/enums.js";
+import { Categoria, StatusCredenciamento } from "../domain/enums.js";
+import { CreateCredenciamentoUseCase } from "../application/use-cases/createCredenciamentoUseCase.js";
+
+const createCredenciamentoUseCase = new CreateCredenciamentoUseCase({
+  createCredenciamento,
+  enqueueDescarbonizacaoProcess
+});
 
 function handleCreateError(error, res) {
   if (error.code === "P2002") {
@@ -37,7 +49,7 @@ export async function createCredenciadoPublicHandler(req, res) {
   }
 
   try {
-    const created = await createCredenciamento(validation.data, {
+    const created = await createCredenciamentoUseCase.execute(validation.data, {
       actorType: "SYSTEM"
     });
     return res.status(201).json(mapPublicCredenciamentoResult(created));
@@ -61,8 +73,13 @@ export async function createComissaoAdminHandler(req, res) {
   }
 
   try {
-    const created = await createCredenciamento(validation.data, {
-      actorType: req.auth?.role === "APP_GATE" ? "APP_GATE" : "ADMIN_USER",
+    const created = await createCredenciamentoUseCase.execute(validation.data, {
+      actorType:
+        req.auth?.role === "APP_GATE" ||
+        req.auth?.role === "LEITOR_CATRACA" ||
+        req.auth?.role === "OPERADOR_QR"
+          ? "APP_GATE"
+          : "ADMIN_USER",
       actorId: req.auth?.id
     });
     return res.status(201).json(mapCredenciadoIdentity(created));
@@ -157,4 +174,51 @@ export async function listCredenciadoEventosAdminHandler(req, res) {
   const boundedLimit = Number.isFinite(limit) ? Math.min(Math.max(limit, 1), 200) : 50;
   const events = await listEventosByCredenciadoId(req.params.id, boundedLimit);
   return res.json(events.map(mapEventoSistema));
+}
+
+export async function updateCredenciadoAdminHandler(req, res) {
+  const id = req.params.id;
+  const current = await findCredenciadoById(id);
+  if (!current) {
+    return res.status(404).json({ error: "credenciado nao encontrado" });
+  }
+
+  const payload = {
+    ...current,
+    ...req.body,
+    categoria: req.body?.categoria || current.categoria
+  };
+
+  const validation = validateCredenciadoPayload(payload, {
+    allowComissaoOrganizadora: true
+  });
+  if (!validation.valid) {
+    return res.status(400).json({ errors: validation.errors });
+  }
+
+  const updated = await updateCredenciadoAdmin(id, validation.data, req.auth);
+  return res.json(mapCredenciadoIdentity(updated));
+}
+
+export async function updateCredenciadoStatusAdminHandler(req, res) {
+  const id = req.params.id;
+  const status = req.body?.statusCredenciamento;
+  if (!status) {
+    return res.status(400).json({ error: "statusCredenciamento e obrigatorio" });
+  }
+  if (!Object.values(StatusCredenciamento).includes(status)) {
+    return res.status(400).json({ error: "statusCredenciamento invalido" });
+  }
+  const updated = await updateCredenciadoStatusAdmin(id, status, req.body?.motivo, req.auth);
+  return res.json(mapCredenciadoIdentity(updated));
+}
+
+export async function softDeleteCredenciadoAdminHandler(req, res) {
+  const id = req.params.id;
+  const updated = await softDeleteCredenciadoAdmin(id, req.body?.motivo, req.auth);
+  return res.json({
+    ok: true,
+    id: updated.id,
+    statusCredenciamento: updated.statusCredenciamento
+  });
 }

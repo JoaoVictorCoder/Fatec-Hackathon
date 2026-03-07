@@ -10,10 +10,7 @@ import {
   createAccessAttempt,
   countRecentAttemptsByCredencial
 } from "../repositories/accessAttemptRepository.js";
-import {
-  findCredencialByCodigoUnico,
-  updateCredencialStatus
-} from "../repositories/credencialRepository.js";
+import { findCredencialByCodigoUnico } from "../repositories/credencialRepository.js";
 import { upsertGateDevice } from "../repositories/gateDeviceRepository.js";
 import { createEventoSistema } from "../repositories/eventoSistemaRepository.js";
 import { createAuditLog } from "../repositories/auditLogRepository.js";
@@ -21,15 +18,8 @@ import { MockGateProvider } from "../providers/gate/mockGateProvider.js";
 
 const gateProvider = new MockGateProvider();
 
-function withinGateSchedule(now = new Date()) {
-  const startHour = Number(process.env.GATE_START_HOUR ?? 0);
-  const endHour = Number(process.env.GATE_END_HOUR ?? 23);
-  const hour = now.getHours();
-  return hour >= startHour && hour <= endHour;
-}
-
 export async function validateAndCheckIn(
-  { codigoUnico, gateCode, accessPoint },
+  { codigoUnico, gateCode, accessPoint, deviceId, deviceInfo, observacaoOperacional },
   actor
 ) {
   return prisma.$transaction(async (tx) => {
@@ -51,7 +41,12 @@ export async function validateAndCheckIn(
           accessPoint: accessPoint || gateCode,
           resultado: AccessResult.DENY,
           motivo: AccessReason.CREDENCIAL_INVALIDA,
-          metadata: { codigoUnico }
+          operatorId: actor?.actorId || null,
+          operatorNome: actor?.actorName || null,
+          operatorRole: actor?.actorRole || null,
+          deviceId: deviceId || null,
+          deviceInfo: deviceInfo || null,
+          metadata: { codigoUnico, observacaoOperacional: observacaoOperacional || null }
         },
         tx
       );
@@ -86,16 +81,18 @@ export async function validateAndCheckIn(
     let reason = AccessReason.ACESSO_PERMITIDO;
     let allowed = true;
 
-    if (!withinGateSchedule()) {
-      reason = AccessReason.FORA_DO_HORARIO;
+    if (
+      credencial.statusCredencial === StatusCredencial.INATIVA
+    ) {
+      reason = AccessReason.CREDENCIAL_INATIVA;
       allowed = false;
-    } else if (credencial.statusCredencial === StatusCredencial.INATIVA) {
-      reason = AccessReason.CREDENCIAL_BLOQUEADA;
+    } else if (credencial.statusCredencial === StatusCredencial.CANCELADA) {
+      reason = AccessReason.CREDENCIAL_CANCELADA;
       allowed = false;
-    } else if (credencial.statusCredencial === StatusCredencial.UTILIZADA) {
-      reason = AccessReason.JA_UTILIZADA;
-      allowed = false;
-    } else if (credencial.credenciado.statusCredenciamento === StatusCredenciamento.BLOQUEADO) {
+    } else if (
+      credencial.credenciado.statusCredenciamento === StatusCredenciamento.BLOQUEADO ||
+      credencial.credenciado.statusCredenciamento === StatusCredenciamento.INATIVO
+    ) {
       reason = AccessReason.CREDENCIAL_BLOQUEADA;
       allowed = false;
     }
@@ -106,12 +103,18 @@ export async function validateAndCheckIn(
       {
         credencialId: credencial.id,
         gateDeviceId: gateDevice.id,
+        operatorId: actor?.actorId || null,
+        operatorNome: actor?.actorName || null,
+        operatorRole: actor?.actorRole || null,
+        deviceId: deviceId || null,
+        deviceInfo: deviceInfo || null,
         accessPoint: accessPoint || gateCode,
         resultado: result,
         motivo: reason,
         metadata: {
           credenciadoId: credencial.credenciado.id,
-          categoria: credencial.credenciado.categoria
+          categoria: credencial.credenciado.categoria,
+          observacaoOperacional: observacaoOperacional || null
         }
       },
       tx
@@ -122,7 +125,6 @@ export async function validateAndCheckIn(
         where: { id: credencial.credenciado.id },
         data: { statusCredenciamento: StatusCredenciamento.CHECKED_IN }
       });
-      await updateCredencialStatus(credencial.id, StatusCredencial.UTILIZADA, tx);
       await createEventoSistema(
         {
           credenciadoId: credencial.credenciado.id,
@@ -163,6 +165,7 @@ export async function validateAndCheckIn(
           resultado: result,
           motivo: reason,
           gateCode,
+          deviceId: deviceId || null,
           attemptsLast5Min
         }
       },
