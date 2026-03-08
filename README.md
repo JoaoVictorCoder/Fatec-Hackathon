@@ -1,40 +1,117 @@
-# Sistema de Credenciamento e Controle de Acesso
+# :coffee: Fatec Hackathon
 
-Sistema para credenciamento publico, emissao de credenciais, operacao administrativa e validacao de acesso no evento.
+<div align="center">
 
-## Funcionalidades principais
+![Status](https://img.shields.io/badge/status-em%20desenvolvimento-3b7a57?style=for-the-badge)
+![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20Vite-61dafb?style=for-the-badge&logo=react&logoColor=black)
+![Backend](https://img.shields.io/badge/backend-Node.js%20%2B%20Express-339933?style=for-the-badge&logo=node.js&logoColor=white)
+![Database](https://img.shields.io/badge/database-Prisma%20%2B%20SQLite%2FSQL-2d3748?style=for-the-badge&logo=prisma&logoColor=white)
 
-- Remocao de `RG` do cadastro e do modelo.
-- Documento flexivel por categoria (`CPF`, `CNPJ` ou ambos).
-- `PCD` como classificacao adicional para qualquer categoria.
-- `nacionalidade` para visitante.
-- Consulta publica de status removida (status apenas no admin).
-- PDF da credencial em formato A4 dobravel em 4 paineis.
-- Cores por categoria no PDF.
-- Edicao admin de cadastro.
-- Exclusao logica (inativacao) no admin.
-- Mudanca de status da credencial e reemissao.
-- Check-in ajustado para registrar multiplas entradas sem bloqueio por duplicidade.
-- Auditoria para acoes sensiveis.
-- Entidade `Evento` adicionada e vinculada ao credenciamento.
-- Mapeamento de perfil organizacional alinhado ao enunciado:
-  - `ADMIN` -> `Admin`
-  - `LEITOR_CATRACA` e `APP_GATE` -> `LeitorCatraca`
-- Estrutura hexagonal explicita (incremental):
-  - `src/application/use-cases`
-  - `src/application/ports/in`
-  - `src/application/ports/out`
-  - `src/adapters/out/*`
-- Descarbonizacao mock em background (sem API externa de mapas), com tabela e dashboard admin.
+</div>
 
-## Rotas publicas
+---
+
+## :bust_in_silhouette: Sobre o projeto
+
+Sistema de **credenciamento e controle de acesso para eventos**, com foco em:
+
+- cadastro publico de participantes
+- emissao de credencial com **QR Code** e **PDF**
+- painel administrativo para operacao, auditoria e gestao
+- area de operador para validacao de entrada
+- recursos de relatorio, backup e acompanhamento de acessos
+
+O projeto foi estruturado para separar claramente os fluxos de **Publico**, **Admin** e **Operador QR**, reduzindo acoplamento entre interface, API e persistencia.
+
+## :rocket: Tecnologias e ferramentas
+
+<div align="center">
+  <img src="https://skillicons.dev/icons?i=react,vite,js,nodejs,express,prisma,docker,sqlite" />
+</div>
+
+Principais tecnologias usadas no sistema:
+
+- **Frontend:** React, React Router e Vite
+- **Backend:** Node.js, Express e Prisma
+- **Persistencia:** banco modelado com Prisma
+- **Infra local:** Docker Compose
+- **Documentos:** PDFKit para geracao de credenciais
+
+## :open_file_folder: Estrutura principal
+
+```text
+Fatec-Hackathon/
+|-- frontend/
+|   `-- src/
+|       |-- api/
+|       |-- components/
+|       |-- constants/
+|       |-- utils/
+|       `-- App.jsx
+|-- backend/
+|   |-- prisma/
+|   `-- src/
+|       |-- adapters/
+|       |-- application/
+|       |-- controllers/
+|       |-- providers/
+|       |-- repositories/
+|       |-- routes/
+|       `-- services/
+`-- docs/
+    `-- MANUTENCAO.md
+```
+
+## :gear: Funcionalidades principais
+
+### :earth_americas: Area publica
+
+- cadastro de credenciados
+- validacao de campos e mascara de documentos
+- geracao de credencial
+- acesso ao PDF da credencial
+- exibicao do QR Code apos cadastro
+
+### :closed_lock_with_key: Area administrativa
+
+- login autenticado com sessao
+- listagem e busca de credenciados
+- edicao de dados cadastrais
+- reemissao e alteracao de status da credencial
+- auditoria e analytics
+- logs de acesso
+- relatorio de visitantes por stand
+- gestao de usuarios internos
+- exportacao e monitoramento de backup
+
+### :iphone: Area do operador QR
+
+- login exclusivo para operacao
+- leitura e validacao de check-in
+- historico resumido de validacoes
+
+## :triangular_ruler: Arquitetura
+
+O backend segue uma organizacao inspirada em **arquitetura hexagonal**, com separacao entre:
+
+- **ports/use-cases:** contratos e regras de aplicacao
+- **adapters:** integracoes com banco, PDF, QR e catraca
+- **repositories:** acesso a dados com Prisma
+- **controllers/routes:** camada HTTP
+
+No frontend, o arquivo `frontend/src/App.jsx` centraliza a navegacao e a composicao das tres jornadas do sistema.
+O contrato HTTP do frontend fica concentrado em `frontend/src/api/credenciamentoApi.js`.
+
+## :satellite: Rotas principais
+
+### Publicas
 
 - `POST /credenciados`
 - `GET /credenciais/:id/pdf`
 - `GET /credenciais/:id/qrcode`
 - `GET /health`
 
-## Rotas auth
+### Autenticacao
 
 - `POST /auth/login`
 - `POST /auth/operator/login`
@@ -42,74 +119,31 @@ Sistema para credenciamento publico, emissao de credenciais, operacao administra
 - `GET /auth/me`
 - `GET /auth/operator/me`
 
-## Rotas admin
+### Administrativas
 
 - `GET /admin/credenciados`
 - `GET /admin/credenciados/:id`
 - `PUT /admin/credenciados/:id`
-- `PATCH /admin/credenciados/:id/status`
-- `DELETE /admin/credenciados/:id` (exclusao logica)
-- `GET /admin/credenciados/:id/historico`
-- `POST /admin/credenciados/comissao-organizadora`
+- `DELETE /admin/credenciados/:id`
 - `GET /admin/eventos`
 - `GET /admin/audit-logs`
-- `POST /admin/check-in/validate`
-- `GET /admin/analytics/overview`
-- `GET /admin/analytics/fraud`
-- `GET /admin/analytics/descarbonizacao`
-- `GET /admin/credenciais/:id`
-- `PUT /admin/credenciais/:id`
-- `PATCH /admin/credenciais/:id/status`
-- `POST /admin/credenciais/:id/reemitir`
-- `GET /admin/eventos-cadastro`
 - `GET /admin/users`
-- `POST /admin/users`
-- `PUT /admin/users/:id`
-- `PATCH /admin/users/:id/active`
-- `PATCH /admin/users/:id/permissions`
 - `GET /admin/access-logs`
-- `GET /admin/access-logs/:id`
 - `GET /admin/backup/status`
 - `POST /admin/backup/export`
 
-## Rotas operador
+### Operador
 
 - `GET /operator/me`
 - `POST /operator/check-in/validate`
 - `GET /operator/history-basic`
 
-## Modelos (Prisma)
+## :computer: Como executar
 
-- `Credenciado`
-- `Credencial`
-- `EventoSistema`
-- `AdminUser`
-- `AuditLog`
-- `GateDevice`
-- `AccessAttempt`
-- `Evento`
-- `DescarbonizacaoRegistro`
-
-## Status relevantes
-
-- Credenciamento: `CADASTRADO`, `APROVADO`, `BLOQUEADO`, `CHECKED_IN`, `INATIVO`
-- Credencial: `GERADA`, `ATIVA`, `INATIVA`, `UTILIZADA`, `CANCELADA`
-
-## LGPD aplicado
-
-- Aceite obrigatorio no cadastro.
-- Minimizacao de dados em respostas publicas.
-- Listagem admin com mascaramento de dados sensiveis.
-- Detalhes completos apenas em area admin autenticada/autorizada.
-- Audit log para acoes administrativas e validacoes de acesso.
-
-## Como rodar
-
-Backend:
+### Backend
 
 ```bash
 cd backend
-cp .env.example .env
 npm install
 npm run prisma:generate
 npm run prisma:migrate:dev -- --name init
@@ -117,78 +151,65 @@ npm run seed
 npm run dev
 ```
 
-Frontend:
+### Frontend
 
 ```bash
 cd frontend
-cp .env.example .env
 npm install
 npm run dev
 ```
 
-Docker:
+### Docker
 
 ```bash
 docker compose up --build
 ```
 
-## Credenciais seed
+## :key: Perfis do sistema
 
-- Master Admin: `master@evento.com` / `Master@123`
-- Admin: `admin@evento.com` / `Admin@123`
-- Gate: `gate@evento.com` / `Gate@123`
-- Leitor Catraca: `leitor@evento.com` / `Leitor@123`
+- `MASTER_ADMIN`: acesso total, usuarios, permissoes e backup
+- `ADMIN`: operacao administrativa geral
+- `OPERADOR_QR`: validacao de entrada em campo
+- `COMISSAO_ORGANIZADORA`: operacao e acompanhamento com escopo controlado
 
-## Perfis e permissoes
+## :bar_chart: Dados e regras relevantes
 
-- `MASTER_ADMIN`: acesso maximo, gestao de usuarios, permissoes, backup.
-- `ADMIN`: operacao administrativa ampla (sem gestao total de usuarios por padrao).
-- `OPERADOR_QR`: operacao mobile de validacao de entrada com permissao customizada por flags.
+- status de credenciamento: `CADASTRADO`, `APROVADO`, `BLOQUEADO`, `CHECKED_IN`, `INATIVO`
+- status de credencial: `GERADA`, `ATIVA`, `INATIVA`, `UTILIZADA`, `CANCELADA`
+- aceite LGPD obrigatorio no cadastro
+- compartilhamento com expositores controlado por consentimento
+- logs e auditoria para acoes sensiveis
 
-## Carbono e cidades
+## :seedling: Carbono e deslocamento
 
-- Formulario publico com:
-  - cidade de origem
-  - combustivel
-  - distancia automatica para cidades vizinhas de Franca
-  - pegada de carbono estimada (simplificada)
-- Cidades mapeadas:
-  - Restinga (6.5 km)
-  - Patrocinio Paulista (32.5 km)
-  - Cristais Paulista (30 km)
-  - Ribeirao Corrente (40 km)
-  - Batatais (60 km)
-  - Claraval (37.5 km)
-  - Ibiraci (51.5 km)
-  - Sao Jose da Bela Vista (44 km)
+O formulario publico tambem considera dados de deslocamento, com:
 
-## Backup e contingencia
+- cidade de origem
+- tipo de combustivel
+- distancia estimada
+- pegada de carbono simplificada
 
-- Volume de backup: `backup_data` no `docker-compose`.
-- Export manual:
-```bash
-cd backend
-npm run backup:export
-```
-- Export por API (somente `MASTER_ADMIN`):
-  - `POST /admin/backup/export`
-- Status de backup:
-  - `GET /admin/backup/status`
-- Restore simples para demo:
-  - subir banco limpo e importar dados do JSON exportado via script/manual conforme necessidade operacional.
+Isso permite alimentar os dashboards de descarbonizacao no painel administrativo.
 
-## Limitacoes pendentes
+## :memo: Documentacao de manutencao
 
-- Layout institucional do PDF usa placeholders para logos.
-- Integracao fisica de catraca continua mock.
-- Sem exclusao fisica como fluxo principal (apenas exclusao logica).
+Para modificacoes manuais futuras, consulte:
 
-## Documentacao de manutencao
+- [docs/MANUTENCAO.md](docs/MANUTENCAO.md)
 
-- Guia tecnico de alteracoes manuais: `docs/MANUTENCAO.md`
-- Pontos de acoplamento comentados no codigo:
-  - `frontend/src/App.jsx`
-  - `frontend/src/api/credenciamentoApi.js`
-  - `backend/src/providers/pdf/credentialPdfProvider.js`
-  - `backend/src/repositories/credenciadoRepository.js`
-  - `backend/src/adapters/out/*`
+Esse guia explica:
+
+- onde alterar campos, filtros e papeis
+- quais arquivos participam de cada fluxo
+- pontos de acoplamento sensiveis
+- ordem segura para mudancas estruturais
+
+## :warning: Limitacoes atuais
+
+- integracao fisica com catraca ainda esta em modo mock
+- layout institucional do PDF ainda usa placeholders visuais
+- o foco principal continua em operacao local e demonstracao
+
+## :pray: Resumo
+
+Este repositório concentra um sistema completo de credenciamento com fluxo publico, administrativo e operacional, organizado para permitir evolucao futura com menos retrabalho e maior previsibilidade nas alteracoes.
