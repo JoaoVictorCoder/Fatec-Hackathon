@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { labels } from "../constants/formConfig";
+import { formFieldLabelKeyByField } from "../constants/formConfig";
+import { t } from "../locales";
 
 const initialState = {
   nomeCompleto: "",
@@ -15,13 +16,17 @@ const initialState = {
   aceitouLgpd: true
 };
 
+function getFieldLabel(fieldName) {
+  return t(formFieldLabelKeyByField[fieldName] || fieldName);
+}
+
 export default function AdminComissaoForm({ onCreate, loading, onClose, error }) {
   const [form, setForm] = useState(initialState);
 
-  function onChange(event) {
+  function handleChange(event) {
     const { name, value, type, checked } = event.target;
-    setForm((prev) => ({
-      ...prev,
+    setForm((currentForm) => ({
+      ...currentForm,
       [name]: type === "checkbox" ? checked : value
     }));
   }
@@ -30,9 +35,9 @@ export default function AdminComissaoForm({ onCreate, loading, onClose, error })
     <div className="modal-backdrop">
       <section className="card modal-card">
         <div className="modal-header">
-          <h3>Adicionar Comissao Organizadora</h3>
+          <h3>{t("adminForm.addGovernanceTitle")}</h3>
           <button type="button" onClick={onClose}>
-            Fechar
+            {t("adminForm.close")}
           </button>
         </div>
 
@@ -53,15 +58,15 @@ export default function AdminComissaoForm({ onCreate, loading, onClose, error })
             "uf",
             "nacionalidade",
             "funcaoCargo"
-          ].map((field) => (
-            <label key={field}>
-              {labels[field] || field}
+          ].map((fieldName) => (
+            <label key={fieldName}>
+              {getFieldLabel(fieldName)}
               <input
-                name={field}
-                value={form[field]}
-                onChange={onChange}
+                name={fieldName}
+                value={form[fieldName]}
+                onChange={handleChange}
                 required
-                maxLength={field === "uf" ? 2 : undefined}
+                maxLength={fieldName === "uf" ? 2 : undefined}
               />
             </label>
           ))}
@@ -71,9 +76,9 @@ export default function AdminComissaoForm({ onCreate, loading, onClose, error })
               type="checkbox"
               name="pcd"
               checked={form.pcd}
-              onChange={onChange}
+              onChange={handleChange}
             />
-            PCD
+            {t("form.pcd")}
           </label>
 
           <label className="checkbox">
@@ -81,14 +86,14 @@ export default function AdminComissaoForm({ onCreate, loading, onClose, error })
               type="checkbox"
               name="aceitouLgpd"
               checked={form.aceitouLgpd}
-              onChange={onChange}
+              onChange={handleChange}
               required
             />
-            Registro com aceite LGPD
+            {t("adminForm.privacyRecord")}
           </label>
 
           <button type="submit" disabled={loading}>
-            {loading ? "Salvando..." : "Salvar membro"}
+            {loading ? t("adminForm.saving") : t("adminForm.saveMember")}
           </button>
         </form>
 

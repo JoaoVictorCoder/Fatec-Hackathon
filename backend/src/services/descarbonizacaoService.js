@@ -1,14 +1,14 @@
 import { createDescarbonizacaoRegistro } from "../repositories/descarbonizacaoRepository.js";
 
-const DISTANCIAS_PARA_FRANCA_KM = Object.freeze({
-  RESTINGA: 6.5,
-  PATROCINIO_PAULISTA: 32.5,
-  CRISTAIS_PAULISTA: 30,
-  RIBEIRAO_CORRENTE: 40,
-  BATATAIS: 60,
-  CLARAVAL: 37.5,
-  IBIRACI: 51.5,
-  SAO_JOSE_DA_BELA_VISTA: 44
+const REFERENCE_CITY_DISTANCES_KM = Object.freeze({
+  SAO_PAULO: 15,
+  CAMPINAS: 95,
+  RIBEIRAO_PRETO: 120,
+  BELO_HORIZONTE: 420,
+  CURITIBA: 410,
+  PORTO_ALEGRE: 820,
+  RIO_DE_JANEIRO: 430,
+  BRASILIA: 860
 });
 
 const FATOR_CO2_POR_KM = Object.freeze({
@@ -35,7 +35,7 @@ function resolveDistancia(cidadeOrigem) {
   if (!key) {
     return DISTANCIA_PADRAO_KM;
   }
-  return DISTANCIAS_PARA_FRANCA_KM[key] || DISTANCIA_PADRAO_KM;
+  return REFERENCE_CITY_DISTANCES_KM[key] || DISTANCIA_PADRAO_KM;
 }
 
 function resolveFator(combustivel) {
@@ -82,13 +82,14 @@ export function enqueueDescarbonizacaoProcess(credenciado) {
       await createDescarbonizacaoRegistro({
         credenciadoId: credenciado.id,
         cidadeOrigem: estimate.cidadeOrigem,
+        cidadeDestino: "Local da Operacao",
         combustivel: estimate.combustivel,
         distanciaKm: estimate.distanciaKm,
         fatorEmissao: estimate.fatorEmissao,
         emissaoKgCo2: estimate.pegadaCarbonoEstimada,
         metadata: {
-          cidadeDestino: "Clube de Campo da Franca - Restinga/SP",
-          source: "franca_neighbor_distance_table",
+          cidadeDestino: "Local da Operacao",
+          source: "reference_city_distance_table",
           noExternalMapsApi: true
         }
       });

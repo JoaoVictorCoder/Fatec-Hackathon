@@ -1,18 +1,18 @@
-const BR_UFS = new Set([
+const BRAZIL_STATE_CODES = new Set([
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT",
   "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO",
   "RR", "SC", "SP", "SE", "TO"
 ]);
 
-export const CIDADES_VIZINHAS_FRANCA = Object.freeze({
-  "Restinga": 6.5,
-  "Patrocinio Paulista": 32.5,
-  "Cristais Paulista": 30,
-  "Ribeirao Corrente": 40,
-  "Batatais": 60,
-  "Claraval": 37.5,
-  "Ibiraci": 51.5,
-  "Sao Jose da Bela Vista": 44
+export const REFERENCE_CITY_DISTANCES_KM = Object.freeze({
+  "Sao Paulo": 15,
+  "Campinas": 95,
+  "Ribeirao Preto": 120,
+  "Belo Horizonte": 420,
+  "Curitiba": 410,
+  "Porto Alegre": 820,
+  "Rio de Janeiro": 430,
+  "Brasilia": 860
 });
 
 const CARBON_FACTORS = Object.freeze({
@@ -21,10 +21,10 @@ const CARBON_FACTORS = Object.freeze({
   DIESEL: 2.6,
   ELETRICO: 0.0545
 });
-const validFuel = new Set(Object.keys(CARBON_FACTORS));
-const DISTANCIA_PADRAO_KM = 250;
+const VALID_FUEL_TYPES = new Set(Object.keys(CARBON_FACTORS));
+const DEFAULT_DISTANCE_KM = 250;
 
-const fakeTokens = new Set([
+const obviousFakeTokens = new Set([
   "teste",
   "aaaa",
   "asdf",
@@ -156,7 +156,7 @@ export function isValidWebsite(value) {
 export function isObviousFakeText(value) {
   const v = normalizeSpaces(value).toLowerCase();
   if (!v) return true;
-  if (fakeTokens.has(v)) return true;
+  if (obviousFakeTokens.has(v)) return true;
   if (/^(.)\1{3,}$/.test(v)) return true;
   return false;
 }
@@ -189,22 +189,22 @@ export function normalizePublicFormPayload(form) {
   };
 }
 
-export function resolveDistanceFromCidade(cidadeOrigem) {
-  const city = normalizeSpaces(cidadeOrigem);
-  return CIDADES_VIZINHAS_FRANCA[city] ?? DISTANCIA_PADRAO_KM;
+export function resolveDistanceFromCity(originCity) {
+  const city = normalizeSpaces(originCity);
+  return REFERENCE_CITY_DISTANCES_KM[city] ?? DEFAULT_DISTANCE_KM;
 }
 
-export function calculateCarbonEstimateFront({ cidadeOrigem, combustivel, distanciaKm }) {
+export function calculateCarbonEstimate({ cidadeOrigem, combustivel, distanciaKm }) {
   const distance = Number.isFinite(Number(distanciaKm)) && Number(distanciaKm) > 0
     ? Number(distanciaKm)
-    : resolveDistanceFromCidade(cidadeOrigem);
+    : resolveDistanceFromCity(cidadeOrigem);
   const fuel = (combustivel || "NAO_INFORMADO").toUpperCase();
   const factor = CARBON_FACTORS[fuel] ?? null;
   if (factor === null) return null;
   return Number((distance * factor).toFixed(3));
 }
 
-export function validatePublicCredenciadoForm(rawForm) {
+export function validatePublicParticipantForm(rawForm) {
   const form = normalizePublicFormPayload(rawForm);
   const errors = {};
   const isVisitanteInternacional =
@@ -213,70 +213,70 @@ export function validatePublicCredenciadoForm(rawForm) {
     form.nacionalidade.toLowerCase() !== "brasil";
 
   if (!isValidFullName(form.nomeCompleto)) {
-    errors.nomeCompleto = "Informe nome e sobrenome";
+    errors.nomeCompleto = "validation.fullName";
   }
   if (!isValidEmail(form.email)) {
-    errors.email = "Informe um email valido";
+    errors.email = "validation.email";
   }
   if (!isValidPhone(form.celular)) {
-    errors.celular = "Informe um celular valido";
+    errors.celular = "validation.phone";
   }
   if (!isValidMunicipio(form.municipio)) {
-    errors.municipio = "Informe a cidade";
+    errors.municipio = "validation.city";
   }
   if (!isValidMunicipio(form.cidadeOrigem || form.municipio)) {
-    errors.cidadeOrigem = "Informe a cidade de origem";
+    errors.cidadeOrigem = "validation.originCity";
   }
   if (!isVisitanteInternacional && !isValidUf(form.uf)) {
-    errors.uf = "Selecione uma UF valida";
+    errors.uf = "validation.state";
   }
   if (form.categoria === "VISITANTE" && !form.nacionalidade) {
-    errors.nacionalidade = "Informe a nacionalidade";
+    errors.nacionalidade = "validation.nationality";
   }
 
   if (["EXPOSITOR", "IMPRENSA", "COLABORADOR_TERCEIRIZADO"].includes(form.categoria) && !form.nacionalidadeEmpresa) {
-    errors.nacionalidadeEmpresa = "Informe a nacionalidade da empresa";
+    errors.nacionalidadeEmpresa = "validation.companyNationality";
   }
   if (!form.aceitouLgpd) {
-    errors.aceitouLgpd = "Voce precisa aceitar os termos da LGPD";
+    errors.aceitouLgpd = "validation.privacyConsent";
   }
-  if (form.combustivel && form.combustivel !== "NAO_INFORMADO" && !validFuel.has(form.combustivel)) {
-    errors.combustivel = "Selecione um combustivel valido";
+  if (form.combustivel && form.combustivel !== "NAO_INFORMADO" && !VALID_FUEL_TYPES.has(form.combustivel)) {
+    errors.combustivel = "validation.fuel";
   }
 
   if (
     form.distanciaKm !== null &&
     (!Number.isFinite(form.distanciaKm) || form.distanciaKm <= 0 || form.distanciaKm > 3000)
   ) {
-    errors.distanciaKm = "Informe uma distancia valida";
+    errors.distanciaKm = "validation.distance";
   }
 
   if (form.cpf && !isValidCpf(form.cpf) && !isVisitanteInternacional) {
-    errors.cpf = "CPF invalido";
+    errors.cpf = "validation.cpf";
   }
   if (form.cnpj && !isValidCnpj(form.cnpj)) {
-    errors.cnpj = "CNPJ invalido";
+    errors.cnpj = "validation.cnpj";
   }
 
   if (form.categoria === "EXPOSITOR" || form.categoria === "IMPRENSA") {
-    if (!form.cnpj) errors.cnpj = "Preencha CNPJ para esta categoria";
+    if (!form.cnpj) errors.cnpj = "validation.cnpjRequiredForCategory";
   }
   if (form.categoria === "COMISSAO_ORGANIZADORA") {
-    if (!form.cpf) errors.cpf = "Preencha CPF para esta categoria";
+    if (!form.cpf) errors.cpf = "validation.cpfRequiredForCategory";
   }
   if (
     ["CAFEICULTOR", "COLABORADOR_TERCEIRIZADO", "COMISSAO_ORGANIZADORA"].includes(form.categoria) &&
     !form.cpf &&
     !form.cnpj
   ) {
-    errors.documento = "Preencha ao menos um documento valido para esta categoria";
+    errors.documento = "validation.documentRequired";
   }
   if (form.categoria === "CAFEICULTOR" && !form.cpf && !form.cnpj) {
-    errors.documento = "Para cafeicultor, informe CPF, CNPJ ou ambos";
+    errors.documento = "validation.producerDocumentRequired";
   }
 
   if (form.siteEmpresa && !isValidWebsite(form.siteEmpresa)) {
-    errors.siteEmpresa = "Informe um site valido";
+    errors.siteEmpresa = "validation.website";
   }
 
   const requiredByCategory = {
@@ -290,18 +290,18 @@ export function validatePublicCredenciadoForm(rawForm) {
 
   for (const field of requiredByCategory[form.categoria] || []) {
     if (!form[field] || isObviousFakeText(form[field])) {
-      errors[field] = "Campo obrigatorio ou invalido";
+      errors[field] = "validation.requiredOrInvalid";
     }
   }
 
   for (const field of ["nomeEmpresa", "nomePropriedade", "nomeVeiculo"]) {
     if (form[field] && isObviousFakeText(form[field])) {
-      errors[field] = "Digite um valor valido";
+      errors[field] = "validation.invalidValue";
     }
   }
 
-  const distance = resolveDistanceFromCidade(form.cidadeOrigem || form.municipio);
-  const pegada = calculateCarbonEstimateFront({
+  const distance = resolveDistanceFromCity(form.cidadeOrigem || form.municipio);
+  const estimatedCarbonFootprint = calculateCarbonEstimate({
     cidadeOrigem: form.cidadeOrigem || form.municipio,
     combustivel: form.combustivel,
     distanciaKm: distance
@@ -312,7 +312,11 @@ export function validatePublicCredenciadoForm(rawForm) {
     normalized: {
       ...form,
       distanciaKm: distance ?? null,
-      pegadaCarbonoEstimada: pegada
+      pegadaCarbonoEstimada: estimatedCarbonFootprint
     }
   };
 }
+
+export const resolveDistanceFromCidade = resolveDistanceFromCity;
+export const calculateCarbonEstimateFront = calculateCarbonEstimate;
+export const validatePublicCredenciadoForm = validatePublicParticipantForm;

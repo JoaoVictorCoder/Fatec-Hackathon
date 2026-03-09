@@ -17,16 +17,16 @@ const initialEvents = [
 ];
 
 async function main() {
-  const evento = await prisma.evento.upsert({
+  const eventRecord = await prisma.evento.upsert({
     where: { id: "11111111-1111-1111-1111-111111111111" },
     update: {
-      nomeEvento: "Fatec Hackathon Credenciamento Setor Cafeeiro",
+      nomeEvento: "OpsFlow Core - Demo Event",
       isGratuito: true,
       ativo: true
     },
     create: {
       id: "11111111-1111-1111-1111-111111111111",
-      nomeEvento: "Fatec Hackathon Credenciamento Setor Cafeeiro",
+      nomeEvento: "OpsFlow Core - Demo Event",
       isGratuito: true,
       ativo: true
     }
@@ -34,7 +34,7 @@ async function main() {
 
   const seeds = [
     {
-      eventoId: evento.id,
+      eventoId: eventRecord.id,
       categoria: "EXPOSITOR",
       nomeCompleto: "Mariana Silva",
       cpf: null,
@@ -52,18 +52,18 @@ async function main() {
       aceitouLgpd: true,
       aceitouCompartilhamentoComExpositores: true,
       cnpj: "12345678000199",
-      siteEmpresa: "https://cafesdeminas.com.br",
-      nomeEmpresa: "Cafes de Minas",
+      siteEmpresa: "https://example-exhibitor.com",
+      nomeEmpresa: "Example Exhibitor",
       statusCredenciamento: "CADASTRADO"
     },
     {
-      eventoId: evento.id,
+      eventoId: eventRecord.id,
       categoria: "CAFEICULTOR",
       nomeCompleto: "Carlos Pereira",
       cpf: "52998224725",
       cnpj: null,
       celular: "11999990002",
-      email: "carlos.cafeicultor@demo.com",
+      email: "carlos.produtor@demo.com",
       municipio: "Varginha",
       cidadeOrigem: "Varginha",
       uf: "MG",
@@ -76,11 +76,11 @@ async function main() {
       aceitouLgpd: true,
       aceitouCompartilhamentoComExpositores: false,
       ccir: "CCIR-000123",
-      nomePropriedade: "Sitio Boa Safra",
+      nomePropriedade: "Propriedade Boa Safra",
       statusCredenciamento: "CADASTRADO"
     },
     {
-      eventoId: evento.id,
+      eventoId: eventRecord.id,
       categoria: "VISITANTE",
       nomeCompleto: "Ana Costa",
       cpf: "39053344705",
@@ -103,35 +103,35 @@ async function main() {
   ];
 
   for (const item of seeds) {
-    const credenciado = await prisma.credenciado.upsert({
+    const participantRecord = await prisma.credenciado.upsert({
       where: { email: item.email },
       update: item,
       create: item,
       include: { credencial: true }
     });
 
-    const codigoUnico = `SEED-${credenciado.id.slice(0, 8).toUpperCase()}`;
+    const uniqueCode = `SEED-${participantRecord.id.slice(0, 8).toUpperCase()}`;
 
     await prisma.credencial.upsert({
-      where: { credenciadoId: credenciado.id },
+      where: { credenciadoId: participantRecord.id },
       update: {
-        codigoUnico,
+        codigoUnico: uniqueCode,
         qrCodePayload: JSON.stringify({
           version: 1,
-          credenciadoId: credenciado.id,
-          credentialCode: codigoUnico,
+          credenciadoId: participantRecord.id,
+          credentialCode: uniqueCode,
           issuedAt: new Date().toISOString()
         }),
         statusCredencial: "GERADA",
         emitidaEm: new Date()
       },
       create: {
-        credenciadoId: credenciado.id,
-        codigoUnico,
+        credenciadoId: participantRecord.id,
+        codigoUnico: uniqueCode,
         qrCodePayload: JSON.stringify({
           version: 1,
-          credenciadoId: credenciado.id,
-          credentialCode: codigoUnico,
+          credenciadoId: participantRecord.id,
+          credentialCode: uniqueCode,
           issuedAt: new Date().toISOString()
         }),
         statusCredencial: "GERADA",
@@ -142,7 +142,7 @@ async function main() {
     for (const event of initialEvents) {
       const alreadyExists = await prisma.eventoSistema.findFirst({
         where: {
-          credenciadoId: credenciado.id,
+          credenciadoId: participantRecord.id,
           tipoEvento: event.tipoEvento
         }
       });
@@ -150,7 +150,7 @@ async function main() {
       if (!alreadyExists) {
         await prisma.eventoSistema.create({
           data: {
-            credenciadoId: credenciado.id,
+            credenciadoId: participantRecord.id,
             tipoEvento: event.tipoEvento,
             descricao: event.descricao,
             metadata: event.metadata
@@ -160,23 +160,33 @@ async function main() {
     }
   }
 
-  const adminEmail = (process.env.ADMIN_EMAIL || "admin@evento.com").toLowerCase();
-  const adminSenha = process.env.ADMIN_PASSWORD || "Admin@123";
-  const masterEmail = (process.env.MASTER_EMAIL || "master@evento.com").toLowerCase();
-  const masterSenha = process.env.MASTER_PASSWORD || "Master@123";
-  const gateEmail = (process.env.GATE_EMAIL || "gate@evento.com").toLowerCase();
-  const gateSenha = process.env.GATE_PASSWORD || "Gate@123";
-  const leitorEmail = (process.env.LEITOR_EMAIL || "leitor@evento.com").toLowerCase();
-  const leitorSenha = process.env.LEITOR_PASSWORD || "Leitor@123";
-  const comissaoEmail = (process.env.COMISSAO_EMAIL || "comissao@evento.com").toLowerCase();
-  const comissaoSenha = process.env.COMISSAO_PASSWORD || "Comissao@123";
+  const adminEmail = (process.env.ADMIN_EMAIL || "admin@opsflow.local").toLowerCase();
+  const adminPassword = process.env.ADMIN_PASSWORD || "Admin@123";
+  const masterEmail = (process.env.MASTER_EMAIL || "owner@opsflow.local").toLowerCase();
+  const masterPassword = process.env.MASTER_PASSWORD || "Master@123";
+  const gateEmail = (process.env.GATE_EMAIL || "operator@opsflow.local").toLowerCase();
+  const gatePassword = process.env.GATE_PASSWORD || "Gate@123";
+  const scannerEmail = (
+    process.env.SCANNER_EMAIL ||
+    process.env.LEITOR_EMAIL ||
+    "scanner@opsflow.local"
+  ).toLowerCase();
+  const scannerPassword =
+    process.env.SCANNER_PASSWORD || process.env.LEITOR_PASSWORD || "Scanner@123";
+  const governanceEmail = (
+    process.env.GOVERNANCE_EMAIL ||
+    process.env.COMISSAO_EMAIL ||
+    "governance@opsflow.local"
+  ).toLowerCase();
+  const governancePassword =
+    process.env.GOVERNANCE_PASSWORD || process.env.COMISSAO_PASSWORD || "Governance@123";
 
-  const [adminHash, masterHash, gateHash, leitorHash, comissaoHash] = await Promise.all([
-    bcrypt.hash(adminSenha, 10),
-    bcrypt.hash(masterSenha, 10),
-    bcrypt.hash(gateSenha, 10),
-    bcrypt.hash(leitorSenha, 10),
-    bcrypt.hash(comissaoSenha, 10)
+  const [adminHash, masterHash, gateHash, scannerHash, governanceHash] = await Promise.all([
+    bcrypt.hash(adminPassword, 10),
+    bcrypt.hash(masterPassword, 10),
+    bcrypt.hash(gatePassword, 10),
+    bcrypt.hash(scannerPassword, 10),
+    bcrypt.hash(governancePassword, 10)
   ]);
 
   await prisma.adminUser.upsert({
@@ -214,24 +224,24 @@ async function main() {
   });
 
   await prisma.adminUser.upsert({
-    where: { email: comissaoEmail },
+    where: { email: governanceEmail },
     update: {
-      nome: "Comissao Organizadora",
-      passwordHash: comissaoHash,
+      nome: "Governance Team",
+      passwordHash: governanceHash,
       role: "COMISSAO_ORGANIZADORA",
       ativo: true
     },
     create: {
-      email: comissaoEmail,
-      nome: "Comissao Organizadora",
-      passwordHash: comissaoHash,
+      email: governanceEmail,
+      nome: "Governance Team",
+      passwordHash: governanceHash,
       role: "COMISSAO_ORGANIZADORA",
       ativo: true
     }
   });
 
-  const comissaoUser = await prisma.adminUser.findUnique({
-    where: { email: comissaoEmail },
+  const governanceUser = await prisma.adminUser.findUnique({
+    where: { email: governanceEmail },
     select: { id: true }
   });
 
@@ -242,11 +252,11 @@ async function main() {
       passwordHash: gateHash,
       role: "OPERADOR_QR",
       standId: "STAND-JACTO-01",
-      standName: "Stand Jacto",
-      empresaNome: "Jacto",
-      empresaVinculadaId: "EXPOSITOR-JACTO",
-      empresaVinculadaNome: "Jacto",
-      comissaoResponsavelId: comissaoUser?.id || null,
+      standName: "Unit A",
+      empresaNome: "Organization A",
+      empresaVinculadaId: "ORG-A",
+      empresaVinculadaNome: "Organization A",
+      comissaoResponsavelId: governanceUser?.id || null,
       permissoesCustomizadas: {
         podeValidarEntrada: true,
         podeVisualizarDadosMinimosCredenciado: true,
@@ -262,12 +272,12 @@ async function main() {
       nome: "App Gate",
       passwordHash: gateHash,
       role: "OPERADOR_QR",
-      standId: "STAND-SRFRANCA-01",
-      standName: "Stand SR Franca",
-      empresaNome: "SR Franca",
-      empresaVinculadaId: "EXPOSITOR-SRFRANCA",
-      empresaVinculadaNome: "SR Franca",
-      comissaoResponsavelId: comissaoUser?.id || null,
+      standId: "UNIT-ALPHA-01",
+      standName: "Unit Alpha",
+      empresaNome: "Organization Alpha",
+      empresaVinculadaId: "ORG-ALPHA",
+      empresaVinculadaNome: "Organization Alpha",
+      comissaoResponsavelId: governanceUser?.id || null,
       permissoesCustomizadas: {
         podeValidarEntrada: true,
         podeVisualizarDadosMinimosCredenciado: true,
@@ -281,12 +291,12 @@ async function main() {
   });
 
   await prisma.adminUser.upsert({
-    where: { email: leitorEmail },
+    where: { email: scannerEmail },
     update: {
-      nome: "Leitor Catraca",
-      passwordHash: leitorHash,
+      nome: "QR Scanner",
+      passwordHash: scannerHash,
       role: "OPERADOR_QR",
-      comissaoResponsavelId: comissaoUser?.id || null,
+      comissaoResponsavelId: governanceUser?.id || null,
       permissoesCustomizadas: {
         podeValidarEntrada: true,
         podeVisualizarDadosMinimosCredenciado: true,
@@ -298,11 +308,11 @@ async function main() {
       ativo: true
     },
     create: {
-      email: leitorEmail,
-      nome: "Leitor Catraca",
-      passwordHash: leitorHash,
+      email: scannerEmail,
+      nome: "QR Scanner",
+      passwordHash: scannerHash,
       role: "OPERADOR_QR",
-      comissaoResponsavelId: comissaoUser?.id || null,
+      comissaoResponsavelId: governanceUser?.id || null,
       permissoesCustomizadas: {
         podeValidarEntrada: true,
         podeVisualizarDadosMinimosCredenciado: true,
@@ -318,14 +328,14 @@ async function main() {
   await prisma.gateDevice.upsert({
     where: { codigo: "GATE-ENTRADA-01" },
     update: {
-      nome: "Catraca Entrada 01",
-      localizacao: "Portao Principal",
+      nome: "Entry Gate 01",
+      localizacao: "Main Gate",
       ativo: true
     },
     create: {
       codigo: "GATE-ENTRADA-01",
-      nome: "Catraca Entrada 01",
-      localizacao: "Portao Principal",
+      nome: "Entry Gate 01",
+      localizacao: "Main Gate",
       ativo: true
     }
   });

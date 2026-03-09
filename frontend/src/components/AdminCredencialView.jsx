@@ -1,7 +1,8 @@
-import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { t } from "../locales";
 
-function Row({ label, value }) {
+function DetailRow({ label, value }) {
   return (
     <div className="detail-field">
       <span>{label}</span>
@@ -11,7 +12,7 @@ function Row({ label, value }) {
 }
 
 export default function AdminCredencialView({ data, loading, saving, error, onSave }) {
-  const [editMode, setEditMode] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({
     codigoUnico: "",
     statusCredencial: "GERADA",
@@ -33,24 +34,24 @@ export default function AdminCredencialView({ data, loading, saving, error, onSa
     <main className="single-page">
       <section className="card card-elevated">
         <div className="admin-header">
-          <h2>Consulta de Credencial</h2>
+          <h2>{t("credentialPage.title")}</h2>
           <Link className="link-button" to="/admin">
-            Voltar ao painel
+            {t("credentialPage.backToDashboard")}
           </Link>
         </div>
 
-        {loading && <p>Carregando credencial...</p>}
+        {loading && <p>{t("credentialPage.loading")}</p>}
         {error && <p className="error">{error}</p>}
 
         {data && (
           <>
             <div className="toolbar">
-              <button type="button" onClick={() => setEditMode((v) => !v)}>
-                {editMode ? "Cancelar edicao" : "Editar credencial"}
+              <button type="button" onClick={() => setIsEditing((value) => !value)}>
+                {isEditing ? t("credentialPage.toggleEdit.on") : t("credentialPage.toggleEdit.off")}
               </button>
             </div>
 
-            {editMode && (
+            {isEditing && (
               <form
                 className="grid"
                 onSubmit={async (event) => {
@@ -61,25 +62,28 @@ export default function AdminCredencialView({ data, loading, saving, error, onSa
                     qrCodePayload: form.qrCodePayload,
                     emitidaEm: form.emitidaEm ? new Date(form.emitidaEm).toISOString() : null
                   });
-                  setEditMode(false);
+                  setIsEditing(false);
                 }}
               >
                 <label>
-                  Codigo unico
+                  {t("credentialPage.uniqueCode")}
                   <input
                     value={form.codigoUnico}
                     onChange={(event) =>
-                      setForm((prev) => ({ ...prev, codigoUnico: event.target.value }))
+                      setForm((currentForm) => ({ ...currentForm, codigoUnico: event.target.value }))
                     }
                     required
                   />
                 </label>
                 <label>
-                  Status credencial
+                  {t("credentialPage.credentialStatus")}
                   <select
                     value={form.statusCredencial}
                     onChange={(event) =>
-                      setForm((prev) => ({ ...prev, statusCredencial: event.target.value }))
+                      setForm((currentForm) => ({
+                        ...currentForm,
+                        statusCredencial: event.target.value
+                      }))
                     }
                   >
                     <option value="GERADA">GERADA</option>
@@ -90,75 +94,83 @@ export default function AdminCredencialView({ data, loading, saving, error, onSa
                   </select>
                 </label>
                 <label>
-                  Emitida em
+                  {t("credentialPage.issuedAt")}
                   <input
                     type="datetime-local"
                     value={form.emitidaEm}
                     onChange={(event) =>
-                      setForm((prev) => ({ ...prev, emitidaEm: event.target.value }))
+                      setForm((currentForm) => ({ ...currentForm, emitidaEm: event.target.value }))
                     }
                   />
                 </label>
                 <label>
-                  QR payload
+                  {t("credentialPage.qrPayload")}
                   <textarea
                     value={form.qrCodePayload}
                     onChange={(event) =>
-                      setForm((prev) => ({ ...prev, qrCodePayload: event.target.value }))
+                      setForm((currentForm) => ({ ...currentForm, qrCodePayload: event.target.value }))
                     }
                     rows={5}
                     required
                   />
                 </label>
                 <button type="submit" disabled={saving}>
-                  {saving ? "Salvando..." : "Salvar credencial"}
+                  {saving ? t("credentialPage.saving") : t("credentialPage.saveCredential")}
                 </button>
               </form>
             )}
 
-            <h3>Credencial</h3>
+            <h3>{t("credentialPage.sectionCredential")}</h3>
             <div className="details-grid">
-              <Row label="ID credencial" value={data.id} />
-              <Row label="Codigo unico" value={data.codigoUnico} />
-              <Row label="Status credencial" value={data.statusCredencial} />
-              <Row label="Emitida em" value={new Date(data.emitidaEm).toLocaleString("pt-BR")} />
-              <Row label="QR payload" value={data.qrCodePayload} />
+              <DetailRow label="ID" value={data.id} />
+              <DetailRow label={t("credentialPage.uniqueCode")} value={data.codigoUnico} />
+              <DetailRow label={t("credentialPage.credentialStatus")} value={data.statusCredencial} />
+              <DetailRow label={t("credentialPage.issuedAt")} value={new Date(data.emitidaEm).toLocaleString()} />
+              <DetailRow label={t("credentialPage.qrPayload")} value={data.qrCodePayload} />
             </div>
 
-            <h3>Identidade vinculada</h3>
+            <h3>{t("credentialPage.sectionIdentity")}</h3>
             <div className="details-grid">
-              <Row label="Nome completo" value={data.credenciado?.nomeCompleto} />
-              <Row label="Categoria" value={data.credenciado?.categoria} />
-              <Row label="E-mail" value={data.credenciado?.email} />
-              <Row label="Celular" value={data.credenciado?.celular} />
-              <Row
-                label="Municipio/UF"
+              <DetailRow label={t("table.name")} value={data.credenciado?.nomeCompleto} />
+              <DetailRow label={t("table.category")} value={data.credenciado?.categoria} />
+              <DetailRow label={t("table.email")} value={data.credenciado?.email} />
+              <DetailRow label={t("table.phone")} value={data.credenciado?.celular} />
+              <DetailRow
+                label={t("table.cityState")}
                 value={`${data.credenciado?.municipio || ""}/${data.credenciado?.uf || ""}`}
               />
-              <Row
-                label="Status credenciamento"
+              <DetailRow
+                label={t("credentialPage.registrationStatus")}
                 value={data.credenciado?.statusCredenciamento}
               />
-              <Row label="CPF" value={data.credenciado?.cpf} />
-              <Row label="CNPJ" value={data.credenciado?.cnpj} />
-              <Row label="Nacionalidade" value={data.credenciado?.nacionalidade} />
-              <Row label="Nacionalidade da empresa" value={data.credenciado?.nacionalidadeEmpresa} />
-              <Row label="Tipo combustivel" value={data.credenciado?.tipoCombustivel} />
-              <Row label="PCD" value={data.credenciado?.pcd ? "Sim" : "Nao"} />
-              <Row label="LGPD" value={data.credenciado?.aceitouLgpd ? "Aceito" : "Nao"} />
-              <Row
-                label="Compartilhamento Expositores"
+              <DetailRow label={t("form.cpf")} value={data.credenciado?.cpf} />
+              <DetailRow label={t("form.cnpj")} value={data.credenciado?.cnpj} />
+              <DetailRow label={t("form.nationality")} value={data.credenciado?.nacionalidade} />
+              <DetailRow
+                label={t("form.companyNationality")}
+                value={data.credenciado?.nacionalidadeEmpresa}
+              />
+              <DetailRow label={t("form.fuelType")} value={data.credenciado?.tipoCombustivel} />
+              <DetailRow label={t("form.pcd")} value={data.credenciado?.pcd ? t("common.yes") : t("common.no")} />
+              <DetailRow
+                label={t("credentialPage.privacyAccepted")}
+                value={data.credenciado?.aceitouLgpd ? t("table.accepted") : t("table.denied")}
+              />
+              <DetailRow
+                label={t("credentialPage.dataSharingAccepted")}
                 value={
-                  data.credenciado?.aceitouCompartilhamentoComExpositores ? "Aceito" : "Nao"
+                  data.credenciado?.aceitouCompartilhamentoComExpositores
+                    ? t("table.accepted")
+                    : t("table.denied")
                 }
               />
-              <Row label="Evento" value={data.credenciado?.evento?.nomeEvento} />
-              <Row label="Nome empresa" value={data.credenciado?.nomeEmpresa} />
-              <Row label="Nome veiculo" value={data.credenciado?.nomeVeiculo} />
-              <Row label="Funcao/Cargo" value={data.credenciado?.funcaoCargo} />
-              <Row label="CCIR" value={data.credenciado?.ccir} />
-              <Row label="Nome propriedade" value={data.credenciado?.nomePropriedade} />
-              <Row label="Site empresa" value={data.credenciado?.siteEmpresa} />
+              <DetailRow label={t("credentialPage.event")} value={data.credenciado?.evento?.nomeEvento} />
+              <DetailRow label={t("form.companyName")} value={data.credenciado?.nomeEmpresa} />
+              <DetailRow label={t("form.vehicleName")} value={data.credenciado?.nomeVeiculo} />
+              <DetailRow label={t("credentialPage.roleFunction")} value={data.credenciado?.funcaoCargo} />
+              <DetailRow label={t("form.ccir")} value={data.credenciado?.ccir} />
+              <DetailRow label={t("credentialPage.propertyName")} value={data.credenciado?.nomePropriedade} />
+              <DetailRow label={t("credentialPage.companyWebsite")} value={data.credenciado?.siteEmpresa} />
             </div>
           </>
         )}

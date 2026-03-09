@@ -1,14 +1,14 @@
-export const categoriaOptions = [
-  { value: "EXPOSITOR", label: "Expositor" },
-  { value: "CAFEICULTOR", label: "Cafeicultor" },
-  { value: "VISITANTE", label: "Visitante" },
-  { value: "IMPRENSA", label: "Imprensa" },
-  { value: "COLABORADOR_TERCEIRIZADO", label: "Colaborador Terceirizado" }
+export const categoryOptions = [
+  { value: "EXPOSITOR", labelKey: "categories.exhibitor" },
+  { value: "CAFEICULTOR", labelKey: "categories.producer" },
+  { value: "VISITANTE", labelKey: "categories.visitor" },
+  { value: "IMPRENSA", labelKey: "categories.press" },
+  { value: "COLABORADOR_TERCEIRIZADO", labelKey: "categories.thirdPartyCollaborator" }
 ];
 
-export const adminComissaoCategoria = {
+export const governanceCategoryOption = {
   value: "COMISSAO_ORGANIZADORA",
-  label: "Comissao Organizadora"
+  labelKey: "categories.governance"
 };
 
 export const categoryExtraFields = {
@@ -20,29 +20,29 @@ export const categoryExtraFields = {
   COLABORADOR_TERCEIRIZADO: ["nomeEmpresa", "nacionalidadeEmpresa", "funcaoCargo"]
 };
 
-export const labels = {
-  nomeCompleto: "Nome completo",
-  cpf: "CPF",
-  celular: "Celular",
-  email: "E-mail",
-  municipio: "Municipio",
-  uf: "UF",
-  nacionalidade: "Nacionalidade",
-  nacionalidadeEmpresa: "Nacionalidade da empresa",
-  tipoCombustivel: "Tipo de combustivel",
-  cidadeOrigem: "Cidade de origem",
-  combustivel: "Combustivel",
-  distanciaKm: "Distancia ate o evento (km)",
-  pegadaCarbonoEstimada: "Pegada de carbono estimada",
-  pcd: "Pessoa com Deficiencia (PCD)",
-  aceitouCompartilhamentoComExpositores: "Aceito compartilhar meus dados com expositores/stands visitados para contato posterior",
-  cnpj: "CNPJ",
-  siteEmpresa: "Site da empresa",
-  nomeEmpresa: "Nome da empresa",
-  ccir: "CCIR",
-  nomePropriedade: "Nome da propriedade",
-  nomeVeiculo: "Nome do veiculo",
-  funcaoCargo: "Funcao/Cargo"
+export const formFieldLabelKeyByField = {
+  nomeCompleto: "form.fullName",
+  cpf: "form.cpf",
+  celular: "form.phone",
+  email: "form.email",
+  municipio: "form.city",
+  uf: "form.state",
+  nacionalidade: "form.nationality",
+  nacionalidadeEmpresa: "form.companyNationality",
+  tipoCombustivel: "form.fuelType",
+  cidadeOrigem: "form.originCity",
+  combustivel: "form.fuel",
+  distanciaKm: "form.estimatedDistanceKm",
+  pegadaCarbonoEstimada: "form.estimatedCarbon",
+  pcd: "form.pcd",
+  aceitouCompartilhamentoComExpositores: "form.dataSharing",
+  cnpj: "form.cnpj",
+  siteEmpresa: "form.companyWebsite",
+  nomeEmpresa: "form.companyName",
+  ccir: "form.ccir",
+  nomePropriedade: "form.propertyName",
+  nomeVeiculo: "form.vehicleName",
+  funcaoCargo: "form.roleFunction"
 };
 
 export const commonFields = [
@@ -53,7 +53,7 @@ export const commonFields = [
   "uf"
 ];
 
-export const baseForm = {
+export const publicBaseForm = {
   categoria: "EXPOSITOR",
   nomeCompleto: "",
   cpf: "",

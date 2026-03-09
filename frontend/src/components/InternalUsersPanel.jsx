@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
+import { t } from "../locales";
 
-function initialPermissions() {
+function createDefaultOperatorPermissions() {
   return {
     podeValidarEntrada: true,
     podeVisualizarDadosMinimosCredenciado: true,
@@ -11,7 +12,7 @@ function initialPermissions() {
   };
 }
 
-function emptyForm() {
+function createEmptyForm() {
   return {
     nome: "",
     email: "",
@@ -35,13 +36,13 @@ export default function InternalUsersPanel({
   onUpdatePermissions,
   onUpdateUser
 }) {
-  const [form, setForm] = useState(emptyForm);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-  const [savingCreate, setSavingCreate] = useState(false);
-  const [rowLoadingId, setRowLoadingId] = useState("");
+  const [form, setForm] = useState(createEmptyForm);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [loadingRowId, setLoadingRowId] = useState("");
   const [editingUserId, setEditingUserId] = useState("");
-  const [draftPermissions, setDraftPermissions] = useState(initialPermissions());
+  const [draftPermissions, setDraftPermissions] = useState(createDefaultOperatorPermissions());
   const [draftUser, setDraftUser] = useState({
     standId: "",
     standName: "",
@@ -62,26 +63,26 @@ export default function InternalUsersPanel({
 
   async function handleCreate(event) {
     event.preventDefault();
-    setSavingCreate(true);
-    setError("");
-    setMessage("");
+    setIsCreating(true);
+    setErrorMessage("");
+    setSuccessMessage("");
     try {
       await onCreate({
         ...form,
-        permissoesCustomizadas: form.role === "OPERADOR_QR" ? initialPermissions() : null
+        permissoesCustomizadas: form.role === "OPERADOR_QR" ? createDefaultOperatorPermissions() : null
       });
-      setForm(emptyForm());
-      setMessage("Usuario criado com sucesso.");
+      setForm(createEmptyForm());
+      setSuccessMessage(t("usersPanel.createSuccess"));
     } catch (createError) {
-      setError(createError.message || "Erro ao criar usuario.");
+      setErrorMessage(createError.message || t("usersPanel.createError"));
     } finally {
-      setSavingCreate(false);
+      setIsCreating(false);
     }
   }
 
   function beginEdit(user) {
     setEditingUserId(user.id);
-    setDraftPermissions({ ...initialPermissions(), ...(user.permissoesCustomizadas || {}) });
+    setDraftPermissions({ ...createDefaultOperatorPermissions(), ...(user.permissoesCustomizadas || {}) });
     setDraftUser({
       standId: user.standId || "",
       standName: user.standName || "",
@@ -90,18 +91,19 @@ export default function InternalUsersPanel({
       empresaVinculadaNome: user.empresaVinculadaNome || "",
       comissaoResponsavelId: user.comissaoResponsavelId || ""
     });
-    setError("");
-    setMessage("");
+    setErrorMessage("");
+    setSuccessMessage("");
   }
 
   async function saveEdit(user) {
-    setRowLoadingId(user.id);
-    setError("");
-    setMessage("");
+    setLoadingRowId(user.id);
+    setErrorMessage("");
+    setSuccessMessage("");
     try {
       if (user.role === "OPERADOR_QR") {
         await onUpdatePermissions(user.id, draftPermissions);
       }
+
       await onUpdateUser(user.id, {
         standId: draftUser.standId,
         standName: draftUser.standName,
@@ -110,52 +112,54 @@ export default function InternalUsersPanel({
         empresaVinculadaNome: draftUser.empresaVinculadaNome,
         comissaoResponsavelId: draftUser.comissaoResponsavelId
       });
+
       setEditingUserId("");
-      setMessage("Alteracoes salvas com sucesso.");
+      setSuccessMessage(t("usersPanel.saveSuccess"));
     } catch (saveError) {
-      setError(saveError.message || "Falha ao salvar alteracoes.");
+      setErrorMessage(saveError.message || t("usersPanel.saveError"));
     } finally {
-      setRowLoadingId("");
+      setLoadingRowId("");
     }
   }
 
   return (
     <section className="card">
-      <h3>Usuarios Internos</h3>
+      <h3>{t("usersPanel.title")}</h3>
+
       <form className="grid" onSubmit={handleCreate}>
         <label>
-          Nome
+          {t("usersPanel.name")}
           <input
             value={form.nome}
-            onChange={(e) => setForm((prev) => ({ ...prev, nome: e.target.value }))}
+            onChange={(event) => setForm((currentForm) => ({ ...currentForm, nome: event.target.value }))}
             required
           />
         </label>
         <label>
-          Email
+          {t("table.email")}
           <input
             value={form.email}
-            onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+            onChange={(event) => setForm((currentForm) => ({ ...currentForm, email: event.target.value }))}
             required
           />
         </label>
         <label>
-          Senha
+          {t("auth.password")}
           <input
             type="password"
             value={form.senha}
-            onChange={(e) => setForm((prev) => ({ ...prev, senha: e.target.value }))}
+            onChange={(event) => setForm((currentForm) => ({ ...currentForm, senha: event.target.value }))}
             required
           />
         </label>
         <label>
-          Perfil
+          {t("usersPanel.role")}
           {managerRole === "COMISSAO_ORGANIZADORA" ? (
             <input value="OPERADOR_QR" disabled />
           ) : (
             <select
               value={form.role}
-              onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value }))}
+              onChange={(event) => setForm((currentForm) => ({ ...currentForm, role: event.target.value }))}
             >
               <option value="ADMIN">ADMIN</option>
               <option value="COMISSAO_ORGANIZADORA">COMISSAO_ORGANIZADORA</option>
@@ -164,132 +168,171 @@ export default function InternalUsersPanel({
           )}
         </label>
         <label>
-          Stand ID
+          {t("usersPanel.standId")}
           <input
             value={form.standId}
-            onChange={(e) => setForm((prev) => ({ ...prev, standId: e.target.value }))}
+            onChange={(event) => setForm((currentForm) => ({ ...currentForm, standId: event.target.value }))}
           />
         </label>
         <label>
-          Nome do Stand
+          {t("usersPanel.standName")}
           <input
             value={form.standName}
-            onChange={(e) => setForm((prev) => ({ ...prev, standName: e.target.value }))}
+            onChange={(event) => setForm((currentForm) => ({ ...currentForm, standName: event.target.value }))}
           />
         </label>
         <label>
-          Empresa
+          {t("usersPanel.company")}
           <input
             value={form.empresaVinculadaNome || form.empresaNome}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                empresaNome: e.target.value,
-                empresaVinculadaNome: e.target.value
+            onChange={(event) =>
+              setForm((currentForm) => ({
+                ...currentForm,
+                empresaNome: event.target.value,
+                empresaVinculadaNome: event.target.value
               }))
             }
           />
         </label>
         <label>
-          Empresa ID
+          {t("usersPanel.companyId")}
           <input
             value={form.empresaVinculadaId}
-            onChange={(e) => setForm((prev) => ({ ...prev, empresaVinculadaId: e.target.value }))}
+            onChange={(event) =>
+              setForm((currentForm) => ({ ...currentForm, empresaVinculadaId: event.target.value }))
+            }
           />
         </label>
         {managerRole !== "COMISSAO_ORGANIZADORA" && (
           <label>
-            Comissao Responsavel (ID)
+            {t("usersPanel.governanceResponsibleId")}
             <input
               value={form.comissaoResponsavelId}
-              onChange={(e) => setForm((prev) => ({ ...prev, comissaoResponsavelId: e.target.value }))}
+              onChange={(event) =>
+                setForm((currentForm) => ({ ...currentForm, comissaoResponsavelId: event.target.value }))
+              }
             />
           </label>
         )}
-        <button type="submit" disabled={savingCreate}>
-          {savingCreate ? "Criando..." : "Criar usuario"}
+        <button type="submit" disabled={isCreating}>
+          {isCreating ? t("usersPanel.creating") : t("usersPanel.createUser")}
         </button>
       </form>
 
-      {message && <p className="success">{message}</p>}
-      {error && <p className="error">{error}</p>}
+      {successMessage && <p className="success">{successMessage}</p>}
+      {errorMessage && <p className="error">{errorMessage}</p>}
 
       <div className="table-wrapper">
         <table className="admin-table">
           <thead>
             <tr>
-              <th>Nome</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Stand</th>
-              <th>Empresa</th>
-              <th>Ativo</th>
-              <th>Acoes</th>
+              <th>{t("usersPanel.name")}</th>
+              <th>{t("table.email")}</th>
+              <th>{t("usersPanel.role")}</th>
+              <th>{t("usersPanel.standName")}</th>
+              <th>{t("usersPanel.company")}</th>
+              <th>{t("usersPanel.active")}</th>
+              <th>{t("usersPanel.actions")}</th>
             </tr>
           </thead>
           <tbody>
             {visibleUsers.map((user) => {
               const isEditing = editingUserId === user.id;
-              const savingRow = rowLoadingId === user.id;
+              const isRowLoading = loadingRowId === user.id;
+
               return (
                 <tr key={user.id}>
                   <td>{user.nome}</td>
                   <td>{user.email}</td>
                   <td>{user.role}</td>
-                  <td>{isEditing ? <input value={draftUser.standName} onChange={(e) => setDraftUser((prev) => ({ ...prev, standName: e.target.value }))} /> : user.standName || "-"}</td>
-                  <td>{isEditing ? <input value={draftUser.empresaVinculadaNome || draftUser.empresaNome} onChange={(e) => setDraftUser((prev) => ({ ...prev, empresaNome: e.target.value, empresaVinculadaNome: e.target.value }))} /> : user.empresaVinculadaNome || user.empresaNome || "-"}</td>
-                  <td>{user.ativo ? "Sim" : "Nao"}</td>
+                  <td>
+                    {isEditing ? (
+                      <input
+                        value={draftUser.standName}
+                        onChange={(event) =>
+                          setDraftUser((currentDraft) => ({ ...currentDraft, standName: event.target.value }))
+                        }
+                      />
+                    ) : (
+                      user.standName || "-"
+                    )}
+                  </td>
+                  <td>
+                    {isEditing ? (
+                      <input
+                        value={draftUser.empresaVinculadaNome || draftUser.empresaNome}
+                        onChange={(event) =>
+                          setDraftUser((currentDraft) => ({
+                            ...currentDraft,
+                            empresaNome: event.target.value,
+                            empresaVinculadaNome: event.target.value
+                          }))
+                        }
+                      />
+                    ) : (
+                      user.empresaVinculadaNome || user.empresaNome || "-"
+                    )}
+                  </td>
+                  <td>{user.ativo ? t("common.yes") : t("common.no")}</td>
                   <td className="table-actions">
                     <button
                       type="button"
-                      disabled={savingRow}
+                      disabled={isRowLoading}
                       onClick={async () => {
-                        setRowLoadingId(user.id);
-                        setError("");
-                        setMessage("");
+                        setLoadingRowId(user.id);
+                        setErrorMessage("");
+                        setSuccessMessage("");
                         try {
                           await onToggleActive(user.id, !user.ativo);
-                          setMessage("Status atualizado com sucesso.");
+                          setSuccessMessage(t("usersPanel.statusSuccess"));
                         } catch (toggleError) {
-                          setError(toggleError.message || "Falha ao atualizar status.");
+                          setErrorMessage(toggleError.message || t("usersPanel.statusError"));
                         } finally {
-                          setRowLoadingId("");
+                          setLoadingRowId("");
                         }
                       }}
                     >
-                      {savingRow ? "Salvando..." : user.ativo ? "Desativar" : "Ativar"}
+                      {isRowLoading
+                        ? t("usersPanel.editing")
+                        : user.ativo
+                          ? t("usersPanel.deactivate")
+                          : t("usersPanel.activate")}
                     </button>
+
                     {!isEditing && (
                       <button type="button" onClick={() => beginEdit(user)}>
-                        Editar
+                        {t("usersPanel.editUser")}
                       </button>
                     )}
+
                     {isEditing && (
                       <>
                         {user.role === "OPERADOR_QR" && (
                           <button
                             type="button"
                             onClick={() =>
-                              setDraftPermissions((prev) => ({
-                                ...prev,
-                                podeUsarCameraParaLeituraQR: !prev.podeUsarCameraParaLeituraQR
+                              setDraftPermissions((currentPermissions) => ({
+                                ...currentPermissions,
+                                podeUsarCameraParaLeituraQR: !currentPermissions.podeUsarCameraParaLeituraQR
                               }))
                             }
                           >
-                            Camera: {draftPermissions.podeUsarCameraParaLeituraQR ? "ON" : "OFF"}
+                            {t("usersPanel.cameraPermission", {
+                              value: draftPermissions.podeUsarCameraParaLeituraQR ? "ON" : "OFF"
+                            })}
                           </button>
                         )}
-                        <button type="button" disabled={savingRow} onClick={() => saveEdit(user)}>
-                          {savingRow ? "Salvando..." : "Salvar"}
+                        <button type="button" disabled={isRowLoading} onClick={() => saveEdit(user)}>
+                          {isRowLoading ? t("credentialPage.saving") : t("usersPanel.saveChanges")}
                         </button>
                         <button
                           type="button"
                           onClick={() => {
                             setEditingUserId("");
-                            setDraftPermissions(initialPermissions());
+                            setDraftPermissions(createDefaultOperatorPermissions());
                           }}
                         >
-                          Cancelar
+                          {t("common.cancel")}
                         </button>
                       </>
                     )}
@@ -300,44 +343,58 @@ export default function InternalUsersPanel({
           </tbody>
         </table>
       </div>
+
       {editingUserId && usersById[editingUserId]?.role === "OPERADOR_QR" && (
         <section className="card">
-          <h4>Permissoes do Operador</h4>
+          <h4>{t("usersPanel.operatorPermissions")}</h4>
           <div className="grid">
-            {Object.entries(draftPermissions).map(([key, value]) => (
-              <label key={key} className="checkbox">
+            {Object.entries(draftPermissions).map(([permissionKey, value]) => (
+              <label key={permissionKey} className="checkbox">
                 <input
                   type="checkbox"
                   checked={value === true}
                   onChange={(event) =>
-                    setDraftPermissions((prev) => ({ ...prev, [key]: event.target.checked }))
+                    setDraftPermissions((currentPermissions) => ({
+                      ...currentPermissions,
+                      [permissionKey]: event.target.checked
+                    }))
                   }
                 />
-                {key}
+                {permissionKey}
               </label>
             ))}
           </div>
           <label>
-            Stand ID
+            {t("usersPanel.standId")}
             <input
               value={draftUser.standId}
-              onChange={(e) => setDraftUser((prev) => ({ ...prev, standId: e.target.value }))}
+              onChange={(event) =>
+                setDraftUser((currentDraft) => ({ ...currentDraft, standId: event.target.value }))
+              }
             />
           </label>
           <label>
-            Empresa ID
+            {t("usersPanel.companyId")}
             <input
               value={draftUser.empresaVinculadaId}
-              onChange={(e) => setDraftUser((prev) => ({ ...prev, empresaVinculadaId: e.target.value }))}
+              onChange={(event) =>
+                setDraftUser((currentDraft) => ({
+                  ...currentDraft,
+                  empresaVinculadaId: event.target.value
+                }))
+              }
             />
           </label>
           {managerRole !== "COMISSAO_ORGANIZADORA" && (
             <label>
-              Comissao Responsavel (ID)
+              {t("usersPanel.governanceResponsibleId")}
               <input
                 value={draftUser.comissaoResponsavelId}
-                onChange={(e) =>
-                  setDraftUser((prev) => ({ ...prev, comissaoResponsavelId: e.target.value }))
+                onChange={(event) =>
+                  setDraftUser((currentDraft) => ({
+                    ...currentDraft,
+                    comissaoResponsavelId: event.target.value
+                  }))
                 }
               />
             </label>

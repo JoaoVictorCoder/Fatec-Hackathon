@@ -6,7 +6,7 @@ import {
 	Routes,
 	useNavigate,
 } from "react-router-dom";
-import { logout, me } from "./api/credenciamentoApi";
+import { getCurrentSession, signOutSession } from "./api/platformApi";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import AdminCredencialPage from "./pages/AdminCredencialPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
@@ -14,6 +14,7 @@ import AdminLoginPage from "./pages/AdminLoginPage";
 import OperatorAreaPage from "./pages/OperatorAreaPage";
 import OperatorLoginPage from "./pages/OperatorLoginPage";
 import PublicAreaPage from "./pages/PublicAreaPage";
+import { t } from "./locales";
 
 function getTabClassName({ isActive }) {
 	return isActive ? "tab active" : "tab";
@@ -31,18 +32,18 @@ function AppHeader({ admin, operator, isOperatorSession }) {
 	return (
 		<header className="topbar">
 			<div className="brand-block">
-				<h1>Alta Cafe</h1>
-				<p>Sistema oficial de credenciamento e acesso</p>
+				<h1>{t("app.brandTitle")}</h1>
+				<p>{t("app.brandSubtitle")}</p>
 			</div>
 			<nav className="tabs">
 				<TabLink to="/" end>
-					Publico
+					{t("app.tabs.public")}
 				</TabLink>
 				{!isOperatorSession && (
-					<TabLink to={admin ? "/admin" : "/admin/login"}>Admin</TabLink>
+					<TabLink to={admin ? "/admin" : "/admin/login"}>{t("app.tabs.admin")}</TabLink>
 				)}
 				<TabLink to={operator ? "/operator" : "/operator/login"}>
-					Operador QR
+					{t("app.tabs.operator")}
 				</TabLink>
 			</nav>
 		</header>
@@ -61,41 +62,41 @@ function normalizeSession(response) {
 
 export default function App() {
 	const navigate = useNavigate();
-	const [admin, setAdmin] = useState(null);
-	const [operator, setOperator] = useState(null);
-	const [checkingAuth, setCheckingAuth] = useState(true);
-	const isOperatorSession = Boolean(operator) && !admin;
+	const [adminUser, setAdminUser] = useState(null);
+	const [operatorUser, setOperatorUser] = useState(null);
+	const [isCheckingSession, setIsCheckingSession] = useState(true);
+	const isOperatorSession = Boolean(operatorUser) && !adminUser;
 
 	useEffect(() => {
-		me()
+		getCurrentSession()
 			.then((response) => {
 				const session = normalizeSession(response);
-				setAdmin(session.admin);
-				setOperator(session.operator);
+				setAdminUser(session.admin);
+				setOperatorUser(session.operator);
 			})
 			.catch(() => {
-				setAdmin(null);
-				setOperator(null);
+				setAdminUser(null);
+				setOperatorUser(null);
 			})
-			.finally(() => setCheckingAuth(false));
+			.finally(() => setIsCheckingSession(false));
 	}, []);
 
 	async function handleLogout() {
-		await logout();
-		setAdmin(null);
-		setOperator(null);
+		await signOutSession();
+		setAdminUser(null);
+		setOperatorUser(null);
 		navigate("/admin/login");
 	}
 
-	if (checkingAuth) {
-		return <p className="loading-screen">Carregando...</p>;
+	if (isCheckingSession) {
+		return <p className="loading-screen">{t("app.loading")}</p>;
 	}
 
 	return (
 		<div className="app-shell">
 			<AppHeader
-				admin={admin}
-				operator={operator}
+				admin={adminUser}
+				operator={operatorUser}
 				isOperatorSession={isOperatorSession}
 			/>
 
@@ -103,32 +104,32 @@ export default function App() {
 				<Route path="/" element={<PublicAreaPage />} />
 				<Route
 					path="/admin/login"
-					element={<AdminLoginPage onLoggedIn={setAdmin} />}
+					element={<AdminLoginPage onLoggedIn={setAdminUser} />}
 				/>
 				<Route
 					path="/operator/login"
-					element={<OperatorLoginPage onLoggedIn={setOperator} />}
+					element={<OperatorLoginPage onLoggedIn={setOperatorUser} />}
 				/>
 				<Route
 					path="/admin"
 					element={
-						<ProtectedAdminRoute admin={admin}>
-							<AdminDashboardPage admin={admin} onLogout={handleLogout} />
+						<ProtectedAdminRoute admin={adminUser}>
+							<AdminDashboardPage admin={adminUser} onLogout={handleLogout} />
 						</ProtectedAdminRoute>
 					}
 				/>
 				<Route
 					path="/operator"
 					element={
-						<ProtectedAdminRoute admin={operator}>
-							<OperatorAreaPage operator={operator} />
+						<ProtectedAdminRoute admin={operatorUser}>
+							<OperatorAreaPage operator={operatorUser} />
 						</ProtectedAdminRoute>
 					}
 				/>
 				<Route
 					path="/admin/credenciais/:id"
 					element={
-						<ProtectedAdminRoute admin={admin}>
+						<ProtectedAdminRoute admin={adminUser}>
 							<AdminCredencialPage />
 						</ProtectedAdminRoute>
 					}

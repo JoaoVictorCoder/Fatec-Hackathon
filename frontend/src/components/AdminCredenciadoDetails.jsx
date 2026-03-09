@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { adminComissaoCategoria, categoriaOptions } from "../constants/formConfig";
+import {
+  categoryOptions,
+  formFieldLabelKeyByField,
+  governanceCategoryOption
+} from "../constants/formConfig";
+import { t } from "../locales";
 
 function Field({ label, value }) {
   return (
@@ -10,17 +15,40 @@ function Field({ label, value }) {
   );
 }
 
+const editableTextFields = [
+  "nomeCompleto",
+  "cpf",
+  "cnpj",
+  "celular",
+  "email",
+  "municipio",
+  "uf",
+  "nacionalidade",
+  "nacionalidadeEmpresa",
+  "tipoCombustivel",
+  "cidadeOrigem",
+  "combustivel",
+  "distanciaKm",
+  "pegadaCarbonoEstimada",
+  "siteEmpresa",
+  "nomeEmpresa",
+  "nomeVeiculo",
+  "nomePropriedade",
+  "ccir",
+  "funcaoCargo"
+];
+
 export default function AdminCredenciadoDetails({
   credenciado,
-  eventos,
+  historyEvents,
   onClose,
   onSave,
   onSoftDelete,
   onCredentialStatusChange,
   onReissue
 }) {
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
-  const [editMode, setEditMode] = useState(false);
+  const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+  const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({
     nomeCompleto: credenciado?.nomeCompleto || "",
     categoria: credenciado?.categoria || "",
@@ -57,180 +85,161 @@ export default function AdminCredenciadoDetails({
     <div className="modal-backdrop">
       <section className="card modal-card">
         <div className="modal-header">
-          <h3>Detalhes do Credenciado</h3>
+          <h3>{t("participantDetails.modalTitle")}</h3>
           <button type="button" onClick={onClose}>
-            Fechar
+            {t("participantDetails.close")}
           </button>
         </div>
 
         <div className="toolbar">
-          <button type="button" onClick={() => setEditMode((v) => !v)}>
-            {editMode ? "Cancelar edicao" : "Editar cadastro"}
+          <button type="button" onClick={() => setIsEditing((value) => !value)}>
+            {isEditing ? t("participantDetails.toggleEditOn") : t("participantDetails.toggleEditOff")}
           </button>
           <button type="button" className="btn-danger" onClick={onSoftDelete}>
-            Inativar cadastro
+            {t("participantDetails.deactivateRegistration")}
           </button>
           <button
             type="button"
             className="btn-danger"
             onClick={() => onCredentialStatusChange("INATIVA")}
           >
-            Bloquear credencial
+            {t("participantDetails.blockCredential")}
           </button>
           <button
             type="button"
             className="btn-secondary"
             onClick={() => onCredentialStatusChange("ATIVA")}
           >
-            Reativar credencial
+            {t("participantDetails.reactivateCredential")}
           </button>
           <button type="button" className="btn-secondary" onClick={onReissue}>
-            Reemitir credencial
+            {t("participantDetails.reissueCredential")}
           </button>
           {credenciado?.credencial?.id && (
             <a
               className="link-button"
-              href={`${API_URL}/credenciais/${credenciado.credencial.id}/pdf`}
+              href={`${apiBaseUrl}/credenciais/${credenciado.credencial.id}/pdf`}
               target="_blank"
               rel="noreferrer"
             >
-              Baixar PDF
+              {t("participantDetails.downloadPdf")}
             </a>
           )}
         </div>
 
-        {editMode && (
+        {isEditing && (
           <form
             className="grid"
             onSubmit={(event) => {
               event.preventDefault();
               onSave(form);
-              setEditMode(false);
+              setIsEditing(false);
             }}
           >
             <label>
-              Categoria
+              {t("form.category")}
               <select
                 value={form.categoria}
                 onChange={(event) =>
-                  setForm((prev) => ({ ...prev, categoria: event.target.value }))
+                  setForm((currentForm) => ({ ...currentForm, categoria: event.target.value }))
                 }
               >
-                {[...categoriaOptions, adminComissaoCategoria].map((option) => (
+                {[...categoryOptions, governanceCategoryOption].map((option) => (
                   <option key={option.value} value={option.value}>
-                    {option.label}
+                    {t(option.labelKey)}
                   </option>
                 ))}
               </select>
             </label>
-            {[
-              ["nomeCompleto", "Nome completo"],
-              ["cpf", "CPF"],
-              ["cnpj", "CNPJ"],
-              ["celular", "Celular"],
-              ["email", "E-mail"],
-              ["municipio", "Municipio"],
-              ["uf", "UF"],
-              ["nacionalidade", "Nacionalidade"],
-              ["nacionalidadeEmpresa", "Nacionalidade da empresa"],
-              ["tipoCombustivel", "Tipo combustivel"],
-              ["cidadeOrigem", "Cidade origem"],
-              ["combustivel", "Combustivel"],
-              ["distanciaKm", "Distancia km"],
-              ["pegadaCarbonoEstimada", "Pegada CO2 estimada"],
-              ["siteEmpresa", "Site da empresa"],
-              ["nomeEmpresa", "Nome da empresa"],
-              ["nomeVeiculo", "Nome do veiculo"],
-              ["nomePropriedade", "Nome da propriedade"],
-              ["ccir", "CCIR"],
-              ["funcaoCargo", "Funcao/Cargo"]
-            ].map(([field, label]) => (
-              <label key={field}>
-                {label}
+
+            {editableTextFields.map((fieldName) => (
+              <label key={fieldName}>
+                {t(formFieldLabelKeyByField[fieldName] || fieldName)}
                 <input
-                  value={form[field] || ""}
+                  value={form[fieldName] || ""}
                   onChange={(event) =>
-                    setForm((prev) => ({ ...prev, [field]: event.target.value }))
+                    setForm((currentForm) => ({ ...currentForm, [fieldName]: event.target.value }))
                   }
                 />
               </label>
             ))}
+
             <label className="checkbox">
               <input
                 type="checkbox"
                 checked={form.pcd}
                 onChange={(event) =>
-                  setForm((prev) => ({ ...prev, pcd: event.target.checked }))
+                  setForm((currentForm) => ({ ...currentForm, pcd: event.target.checked }))
                 }
               />
-              PCD
+              {t("form.pcd")}
             </label>
             <label className="checkbox">
               <input
                 type="checkbox"
                 checked={form.aceitouLgpd}
                 onChange={(event) =>
-                  setForm((prev) => ({ ...prev, aceitouLgpd: event.target.checked }))
+                  setForm((currentForm) => ({ ...currentForm, aceitouLgpd: event.target.checked }))
                 }
               />
-              Aceitou LGPD
+              {t("form.privacyConsentLabel")}
             </label>
             <label className="checkbox">
               <input
                 type="checkbox"
                 checked={form.aceitouCompartilhamentoComExpositores}
                 onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
+                  setForm((currentForm) => ({
+                    ...currentForm,
                     aceitouCompartilhamentoComExpositores: event.target.checked
                   }))
                 }
               />
-              Aceitou compartilhamento com expositores
+              {t("participantDetails.dataSharingWithExhibitors")}
             </label>
-            <button type="submit">Salvar alteracoes</button>
+            <button type="submit">{t("participantDetails.saveChanges")}</button>
           </form>
         )}
 
         <div className="details-grid">
-          <Field label="Nome completo" value={credenciado.nomeCompleto} />
-          <Field label="Categoria" value={credenciado.categoria} />
-          <Field label="Status credenciamento" value={credenciado.statusCredenciamento} />
-          <Field label="E-mail" value={credenciado.email} />
-          <Field label="Celular" value={credenciado.celular} />
-          <Field label="Municipio/UF" value={`${credenciado.municipio}/${credenciado.uf}`} />
-          <Field label="CPF" value={credenciado.cpf} />
-          <Field label="CNPJ" value={credenciado.cnpj} />
-          <Field label="Nacionalidade" value={credenciado.nacionalidade} />
-          <Field label="Nacionalidade da empresa" value={credenciado.nacionalidadeEmpresa} />
-          <Field label="Tipo combustivel" value={credenciado.tipoCombustivel} />
-          <Field label="Cidade origem" value={credenciado.cidadeOrigem} />
-          <Field label="Combustivel" value={credenciado.combustivel} />
-          <Field label="Distancia km" value={credenciado.distanciaKm} />
-          <Field label="Pegada CO2" value={credenciado.pegadaCarbonoEstimada} />
-          <Field label="PCD" value={credenciado.pcd ? "Sim" : "Nao"} />
-          <Field label="LGPD" value={credenciado.aceitouLgpd ? "Aceito" : "Nao"} />
+          <Field label={t("form.fullName")} value={credenciado.nomeCompleto} />
+          <Field label={t("form.category")} value={credenciado.categoria} />
+          <Field label={t("participantDetails.registrationStatus")} value={credenciado.statusCredenciamento} />
+          <Field label={t("table.email")} value={credenciado.email} />
+          <Field label={t("table.phone")} value={credenciado.celular} />
+          <Field label={t("table.cityState")} value={`${credenciado.municipio}/${credenciado.uf}`} />
+          <Field label={t("form.cpf")} value={credenciado.cpf} />
+          <Field label={t("form.cnpj")} value={credenciado.cnpj} />
+          <Field label={t("form.nationality")} value={credenciado.nacionalidade} />
+          <Field label={t("form.companyNationality")} value={credenciado.nacionalidadeEmpresa} />
+          <Field label={t("form.fuelType")} value={credenciado.tipoCombustivel} />
+          <Field label={t("form.originCity")} value={credenciado.cidadeOrigem} />
+          <Field label={t("form.fuel")} value={credenciado.combustivel} />
+          <Field label={t("form.estimatedDistanceKm")} value={credenciado.distanciaKm} />
+          <Field label={t("form.estimatedCarbon")} value={credenciado.pegadaCarbonoEstimada} />
+          <Field label={t("form.pcd")} value={credenciado.pcd ? t("common.yes") : t("common.no")} />
+          <Field label={t("table.privacy")} value={credenciado.aceitouLgpd ? t("table.accepted") : t("table.denied")} />
           <Field
-            label="Compartilhamento com expositores"
-            value={credenciado.aceitouCompartilhamentoComExpositores ? "Aceito" : "Nao"}
+            label={t("participantDetails.dataSharingWithExhibitors")}
+            value={credenciado.aceitouCompartilhamentoComExpositores ? t("table.accepted") : t("table.denied")}
           />
-          <Field label="Evento" value={credenciado.evento?.nomeEvento} />
-          <Field label="Codigo da credencial" value={credenciado.credencial?.codigoUnico} />
-          <Field label="Status da credencial" value={credenciado.credencial?.statusCredencial} />
-          <Field label="Funcao/Cargo" value={credenciado.funcaoCargo} />
-          <Field label="Nome empresa" value={credenciado.nomeEmpresa} />
-          <Field label="Nome veiculo" value={credenciado.nomeVeiculo} />
-          <Field label="Nome propriedade" value={credenciado.nomePropriedade} />
-          <Field label="CCIR" value={credenciado.ccir} />
+          <Field label={t("credentialPage.event")} value={credenciado.evento?.nomeEvento} />
+          <Field label={t("participantDetails.credentialCode")} value={credenciado.credencial?.codigoUnico} />
+          <Field label={t("participantDetails.credentialStatus")} value={credenciado.credencial?.statusCredencial} />
+          <Field label={t("form.roleFunction")} value={credenciado.funcaoCargo} />
+          <Field label={t("form.companyName")} value={credenciado.nomeEmpresa} />
+          <Field label={t("form.vehicleName")} value={credenciado.nomeVeiculo} />
+          <Field label={t("form.propertyName")} value={credenciado.nomePropriedade} />
+          <Field label={t("form.ccir")} value={credenciado.ccir} />
         </div>
 
-        <h4>Historico basico</h4>
+        <h4>{t("participantDetails.basicHistoryTitle")}</h4>
         <ul className="event-list compact">
-          {eventos.map((evento) => (
-            <li key={evento.id} className="event-item">
-              <strong>{evento.tipoEvento}</strong>
-              <span>{evento.descricao}</span>
-              <small>{new Date(evento.createdAt).toLocaleString("pt-BR")}</small>
+          {historyEvents.map((eventItem) => (
+            <li key={eventItem.id} className="event-item">
+              <strong>{eventItem.tipoEvento}</strong>
+              <span>{eventItem.descricao}</span>
+              <small>{new Date(eventItem.createdAt).toLocaleString()}</small>
             </li>
           ))}
         </ul>

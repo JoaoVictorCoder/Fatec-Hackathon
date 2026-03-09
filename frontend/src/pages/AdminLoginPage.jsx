@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { login } from "../api/credenciamentoApi";
+import { signInAdmin } from "../api/platformApi";
 import AdminLoginForm from "../components/AdminLoginForm";
+import { t } from "../locales";
 
 export default function AdminLoginPage({ onLoggedIn }) {
   const navigate = useNavigate();
@@ -11,26 +12,26 @@ export default function AdminLoginPage({ onLoggedIn }) {
   return (
     <main className="auth-layout">
       <section className="auth-hero card">
-        <h2>Area Administrativa</h2>
-        <p>Acesso seguro para equipe organizadora e operacao do evento.</p>
+        <h2>{t("auth.admin.heroTitle")}</h2>
+        <p>{t("auth.admin.heroSubtitle")}</p>
       </section>
       <AdminLoginForm
         loading={loading}
         error={error}
-        title="Entrar no Painel Admin"
-        subtitle="Use seu e-mail e senha para continuar."
+        title={t("auth.admin.title")}
+        subtitle={t("auth.admin.subtitle")}
         onSubmit={async (payload) => {
           setLoading(true);
           setError("");
           try {
-            const data = await login(payload);
+            const data = await signInAdmin(payload);
             if (data.admin?.role === "OPERADOR_QR") {
-              throw new Error("Use a aba Operador QR para este perfil");
+              throw new Error(t("auth.admin.operatorProfileError"));
             }
             onLoggedIn(data.admin);
             navigate("/admin");
           } catch (loginError) {
-            setError(loginError.message || "Falha no login.");
+            setError(loginError.message || t("auth.admin.fallbackError"));
           } finally {
             setLoading(false);
           }

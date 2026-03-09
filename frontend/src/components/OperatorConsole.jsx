@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import jsQR from "jsqr";
+import { t } from "../locales";
 
-function getDeviceId() {
+function getPersistentDeviceId() {
   const key = "operator_device_id";
   const existing = localStorage.getItem(key);
   if (existing) return existing;
@@ -10,7 +11,7 @@ function getDeviceId() {
   return created;
 }
 
-function deviceInfo() {
+function collectDeviceInfo() {
   return {
     userAgent: navigator.userAgent,
     platform: navigator.platform,
@@ -20,7 +21,7 @@ function deviceInfo() {
   };
 }
 
-function decodeCodigoFromQrText(text) {
+function parseCredentialCodeFromQrText(text) {
   if (!text) return "";
   const trimmed = String(text).trim();
   try {
@@ -75,27 +76,28 @@ function buildVideoCandidates(videoDevices = []) {
 }
 
 export default function OperatorConsole({ operator, onValidate, history, loading }) {
-  const [codigoUnico, setCodigoUnico] = useState("");
-  const [observacaoOperacional, setObservacaoOperacional] = useState("");
+  const [credentialCode, setCredentialCode] = useState("");
+  const [operationalNote, setOperationalNote] = useState("");
   const [result, setResult] = useState(null);
-  const [cameraActive, setCameraActive] = useState(false);
+  const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState("");
   const [scanStatus, setScanStatus] = useState("idle");
+
   const videoRef = useRef(null);
   const streamRef = useRef(null);
-  const rafRef = useRef(null);
+  const animationFrameRef = useRef(null);
   const detectorRef = useRef(null);
   const canvasRef = useRef(null);
   const lastReadRef = useRef({ text: "", at: 0 });
-  const validatingRef = useRef(false);
-  const localDeviceId = useMemo(() => getDeviceId(), []);
+  const isValidatingRef = useRef(false);
+  const localDeviceId = useMemo(() => getPersistentDeviceId(), []);
 
   const canUseCamera = operator?.permissoesCustomizadas?.podeUsarCameraParaLeituraQR !== false;
 
   function stopCamera() {
-    if (rafRef.current) {
-      window.cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
+    if (animationFrameRef.current) {
+      window.cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
@@ -104,7 +106,7 @@ export default function OperatorConsole({ operator, onValidate, history, loading
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-    setCameraActive(false);
+    setIsCameraActive(false);
     setScanStatus("idle");
   }
 
@@ -152,19 +154,19 @@ export default function OperatorConsole({ operator, onValidate, history, loading
       try {
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         if (!videoRef.current) return stream;
-        const video = videoRef.current;
-        video.setAttribute("autoplay", "true");
-        video.setAttribute("muted", "true");
-        video.setAttribute("playsinline", "true");
-        video.muted = true;
-        video.defaultMuted = true;
-        video.playsInline = true;
-        video.autoplay = true;
-        video.srcObject = stream;
-        await video.play();
-        await waitForVideoReady(video);
+        const videoElement = videoRef.current;
+        videoElement.setAttribute("autoplay", "true");
+        videoElement.setAttribute("muted", "true");
+        videoElement.setAttribute("playsinline", "true");
+        videoElement.muted = true;
+        videoElement.defaultMuted = true;
+        videoElement.playsInline = true;
+        videoElement.autoplay = true;
+        videoElement.srcObject = stream;
+        await videoElement.play();
+        await waitForVideoReady(videoElement);
 
-        if ((video.videoWidth || 0) > 0 && (video.videoHeight || 0) > 0) {
+        if ((videoElement.videoWidth || 0) > 0 && (videoElement.videoHeight || 0) > 0) {
           return stream;
         }
         stream.getTracks().forEach((track) => track.stop());
@@ -176,40 +178,45 @@ export default function OperatorConsole({ operator, onValidate, history, loading
   }
 
   async function validateByCode(rawText) {
-    const decodedCode = decodeCodigoFromQrText(rawText);
+    const decodedCode = parseCredentialCodeFromQrText(rawText);
     if (!decodedCode) return;
+
     const now = Date.now();
     if (lastReadRef.current.text === decodedCode && now - lastReadRef.current.at < 3000) {
       return;
     }
+
     lastReadRef.current = { text: decodedCode, at: now };
     setScanStatus("validating");
-    validatingRef.current = true;
+    isValidatingRef.current = true;
+
     try {
       const response = await onValidate({
         codigoUnico: decodedCode,
         gateCode: "MOBILE-OPERATOR",
-        accessPoint: operator?.standName || "Entrada Principal",
+        accessPoint: operator?.standName || t("operatorConsole.defaultAccessPoint"),
         deviceId: localDeviceId,
-        deviceInfo: deviceInfo(),
-        observacaoOperacional
+        deviceInfo: collectDeviceInfo(),
+        observacaoOperacional: operationalNote
       });
-      setCodigoUnico(decodedCode);
+      setCredentialCode(decodedCode);
       setResult(response);
       setScanStatus("idle");
     } finally {
-      validatingRef.current = false;
+      isValidatingRef.current = false;
     }
   }
 
   async function startCamera() {
     setCameraError("");
+
     if (!canUseCamera) {
-      setCameraError("Seu perfil nao possui permissao para usar camera.");
+      setCameraError(t("operatorConsole.permissionError"));
       return;
     }
+
     if (!navigator?.mediaDevices?.getUserMedia) {
-      setCameraError("Camera nao suportada neste navegador.");
+      setCameraError(t("operatorConsole.unsupportedCamera"));
       return;
     }
 
@@ -219,17 +226,20 @@ export default function OperatorConsole({ operator, onValidate, history, loading
       } else {
         detectorRef.current = null;
       }
+
       const stream = await openVideoWithFallback();
       streamRef.current = stream;
-      setCameraActive(true);
+      setIsCameraActive(true);
       setScanStatus("scanning");
 
       const detectOnce = async () => {
-        if (!videoRef.current || validatingRef.current || videoRef.current.readyState < 2) {
-          rafRef.current = window.requestAnimationFrame(detectOnce);
+        if (!videoRef.current || isValidatingRef.current || videoRef.current.readyState < 2) {
+          animationFrameRef.current = window.requestAnimationFrame(detectOnce);
           return;
         }
-        if (!videoRef.current || validatingRef.current) return;
+
+        if (!videoRef.current || isValidatingRef.current) return;
+
         try {
           if (detectorRef.current) {
             const results = await detectorRef.current.detect(videoRef.current);
@@ -237,17 +247,17 @@ export default function OperatorConsole({ operator, onValidate, history, loading
               await validateByCode(results[0].rawValue || "");
             }
           } else {
-            const video = videoRef.current;
+            const videoElement = videoRef.current;
             if (!canvasRef.current) {
               canvasRef.current = document.createElement("canvas");
             }
             const canvas = canvasRef.current;
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 480;
-            const ctx = canvas.getContext("2d", { willReadFrequently: true });
-            if (ctx) {
-              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-              const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            canvas.width = videoElement.videoWidth || 640;
+            canvas.height = videoElement.videoHeight || 480;
+            const context = canvas.getContext("2d", { willReadFrequently: true });
+            if (context) {
+              context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+              const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
               const qr = jsQR(imageData.data, imageData.width, imageData.height, {
                 inversionAttempts: "attemptBoth"
               });
@@ -257,19 +267,20 @@ export default function OperatorConsole({ operator, onValidate, history, loading
             }
           }
         } catch {
-          // leitura continua
+          // keep scanning
         } finally {
-          rafRef.current = window.requestAnimationFrame(detectOnce);
+          animationFrameRef.current = window.requestAnimationFrame(detectOnce);
         }
       };
-      rafRef.current = window.requestAnimationFrame(detectOnce);
+
+      animationFrameRef.current = window.requestAnimationFrame(detectOnce);
     } catch (error) {
       if (error?.name === "NotAllowedError" || error?.name === "PermissionDeniedError") {
-        setCameraError("Permissao de camera negada.");
+        setCameraError(t("operatorConsole.deniedCamera"));
       } else if (error?.name === "NotFoundError" || error?.name === "DevicesNotFoundError") {
-        setCameraError("Nenhuma camera disponivel neste dispositivo.");
+        setCameraError(t("operatorConsole.noCamera"));
       } else {
-        setCameraError("Nao foi possivel acessar a camera. Verifique permissoes.");
+        setCameraError(t("operatorConsole.genericCameraError"));
       }
       stopCamera();
       console.error(error);
@@ -283,29 +294,33 @@ export default function OperatorConsole({ operator, onValidate, history, loading
   return (
     <main className="single-page operator-page">
       <section className="card card-elevated">
-        <h2>Operador QR</h2>
+        <h2>{t("operatorConsole.title")}</h2>
         <p className="section-subtitle">
-          {operator?.nome} - {operator?.role} | Stand: {operator?.standName || "-"}
+          {t("operatorConsole.subtitle", {
+            name: operator?.nome || "-",
+            role: operator?.role || "-",
+            unit: operator?.standName || "-"
+          })}
         </p>
-        <p className="hint-text">Device ID: {localDeviceId}</p>
+        <p className="hint-text">{t("operatorConsole.deviceId", { id: localDeviceId })}</p>
 
         <div className="toolbar">
-          {!cameraActive ? (
+          {!isCameraActive ? (
             <button type="button" onClick={startCamera} disabled={loading}>
-              Ler QR Code
+              {t("operatorConsole.startQrScan")}
             </button>
           ) : (
             <button type="button" className="btn-danger" onClick={stopCamera}>
-              Parar camera
+              {t("operatorConsole.stopCamera")}
             </button>
           )}
           <span className="hint-text">
-            {scanStatus === "scanning" && "Camera ativa: aponte para o QR"}
-            {scanStatus === "validating" && "Validando leitura..."}
+            {scanStatus === "scanning" && t("operatorConsole.scanningHint")}
+            {scanStatus === "validating" && t("operatorConsole.validatingHint")}
           </span>
         </div>
 
-        {cameraActive && (
+        {isCameraActive && (
           <div className="operator-camera-wrap">
             <video ref={videoRef} className="operator-camera" muted playsInline autoPlay />
           </div>
@@ -316,43 +331,49 @@ export default function OperatorConsole({ operator, onValidate, history, loading
           className="grid single-column"
           onSubmit={async (event) => {
             event.preventDefault();
-            await validateByCode(codigoUnico);
+            await validateByCode(credentialCode);
           }}
         >
           <label>
-            Codigo/QR da credencial
-            <input value={codigoUnico} onChange={(e) => setCodigoUnico(e.target.value)} required />
+            {t("operatorConsole.credentialInput")}
+            <input
+              value={credentialCode}
+              onChange={(event) => setCredentialCode(event.target.value)}
+              required
+            />
           </label>
           <label>
-            Observacao operacional
+            {t("operatorConsole.operationalNote")}
             <input
-              value={observacaoOperacional}
-              onChange={(e) => setObservacaoOperacional(e.target.value)}
+              value={operationalNote}
+              onChange={(event) => setOperationalNote(event.target.value)}
             />
           </label>
           <button type="submit" disabled={loading}>
-            {loading ? "Validando..." : "Validar entrada"}
+            {loading ? t("operatorConsole.validatingHint") : t("operatorConsole.validateAccess")}
           </button>
         </form>
 
         {result && (
           <div className={result.resultado === "ALLOW" ? "success-box" : "error-box"}>
-            <strong>{result.resultado === "ALLOW" ? "Acesso Liberado" : "Acesso Negado"}</strong>
-            <p>Motivo: {result.motivo}</p>
-            <p>Credenciado: {result.credenciado?.nomeCompleto || "-"}</p>
-            <p>Categoria: {result.credenciado?.categoria || "-"}</p>
+            <strong>
+              {result.resultado === "ALLOW" ? t("operatorConsole.allowed") : t("operatorConsole.denied")}
+            </strong>
+            <p>{t("operatorConsole.reason", { reason: result.motivo || "-" })}</p>
+            <p>{t("operatorConsole.participant", { name: result.credenciado?.nomeCompleto || "-" })}</p>
+            <p>{t("operatorConsole.category", { category: result.credenciado?.categoria || "-" })}</p>
           </div>
         )}
       </section>
 
       <section className="card">
-        <h3>Historico basico</h3>
+        <h3>{t("operatorConsole.historyTitle")}</h3>
         <ul className="event-list compact">
           {(history || []).map((item) => (
             <li key={item.id} className="event-item">
               <strong>{item.resultado}</strong>
-              <span>{item.nomeCredenciado || "Sem vinculo"}</span>
-              <small>{new Date(item.createdAt).toLocaleString("pt-BR")}</small>
+              <span>{item.nomeCredenciado || t("operatorConsole.historyNoParticipant")}</span>
+              <small>{new Date(item.createdAt).toLocaleString()}</small>
             </li>
           ))}
         </ul>

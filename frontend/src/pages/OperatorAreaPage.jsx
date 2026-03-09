@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { operatorHistoryBasic, operatorValidateCheckIn } from "../api/credenciamentoApi";
+import { listOperatorHistory, runOperatorCheckInValidation } from "../api/platformApi";
 import OperatorConsole from "../components/OperatorConsole";
 
 export default function OperatorAreaPage({ operator }) {
@@ -7,7 +7,7 @@ export default function OperatorAreaPage({ operator }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    operatorHistoryBasic()
+    listOperatorHistory()
       .then((data) => setHistory(data.items || []))
       .catch(() => setHistory([]));
   }, []);
@@ -20,9 +20,9 @@ export default function OperatorAreaPage({ operator }) {
       onValidate={async (payload) => {
         setLoading(true);
         try {
-          const result = await operatorValidateCheckIn(payload);
-          const hist = await operatorHistoryBasic();
-          setHistory(hist.items || []);
+          const result = await runOperatorCheckInValidation(payload);
+          const historyData = await listOperatorHistory();
+          setHistory(historyData.items || []);
           return result;
         } finally {
           setLoading(false);

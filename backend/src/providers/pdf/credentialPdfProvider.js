@@ -16,22 +16,22 @@ const COLORS = {
 };
 
 const SPONSORS = [
-  "A ALVES S.A / NEW HOLLAND",
-  "AGRPL / TTO",
-  "ROBUSTA / YANMAR",
-  "SR FRANCA",
-  "SAMI / JACTO",
-  "LS TRACTOR / LION",
-  "AEAGRO",
-  "REDPASS / OIMASA"
+  "SPONSOR 01",
+  "SPONSOR 02",
+  "SPONSOR 03",
+  "SPONSOR 04",
+  "SPONSOR 05",
+  "SPONSOR 06",
+  "SPONSOR 07",
+  "SPONSOR 08"
 ];
 
 const INSTRUCTIONS = [
-  "Leve sua credencial impressa ate o evento;",
-  "Dobre em 4;",
-  "Insira no Porta Credencial disponibilizado na Entrada;",
-  "Seu uso e obrigatorio durante todo o periodo em que estiver na feira;",
-  "O portador desta credencial concorda que a comissao organizadora tem direitos exclusivos de uso de imagem (fotografias e filmagens) de pessoas, estandes e produtos para divulgacao do evento em qualquer momento."
+  "Leve sua credencial impressa para o local da operacao;",
+  "Dobre conforme o layout da credencial;",
+  "Use em local visivel durante sua permanencia;",
+  "Siga as orientacoes da equipe de operacao e seguranca;",
+  "A organizacao pode registrar imagens para fins de seguranca e comunicacao institucional."
 ];
 
 function formatUpper(value) {
@@ -122,8 +122,8 @@ function drawEventBrand(doc, x, y, w) {
   doc.circle(x + 14, y + 16, 10).lineWidth(1.2).strokeColor(COLORS.white).stroke();
   doc.fillColor(COLORS.white).font("Helvetica-Bold").fontSize(7).text("6a", x + 8, y + 12, { width: 12, align: "center" });
 
-  doc.font("Helvetica-Bold").fontSize(12).fillColor(COLORS.white).text("ALTA CAFE", x + 30, y + 8);
-  doc.font("Helvetica").fontSize(8).text("FEIRA DE NEGOCIOS DO SETOR CAFEEIRO", x + 30, y + 24, {
+  doc.font("Helvetica-Bold").fontSize(12).fillColor(COLORS.white).text("OPSFLOW CORE", x + 30, y + 8);
+  doc.font("Helvetica").fontSize(8).text("OPEN SOURCE OPERATIONS PLATFORM", x + 30, y + 24, {
     width: w - 34
   });
 }
@@ -237,8 +237,8 @@ function drawHalfCredential(doc, data, x, y, w, h) {
       `LOCAL: ${data.localEvento}`,
       `DATA: ${data.dataEvento}`,
       `HORARIO: ${data.horarioEvento}`,
-      "ENTRADA: gratuita, no credenciamento da feira.",
-      "ESTACIONAMENTO: gratuito para expositores e visitantes."
+      "ENTRADA: conforme configuracao da organizacao.",
+      "OBS: personalize este bloco no provider de PDF."
     ].join("\n\n"),
     x + 8 + boxW + infoGap + 6,
     boxY + 20,
@@ -281,10 +281,9 @@ export async function buildCredentialPdf({ credenciado, credencial, qrPngBuffer 
       empresa: resolveCompany(credenciado),
       perfil: categoryToProfile(credenciado?.categoria),
       codigoUnico: credencial?.codigoUnico || "CODIGO-NAO-INFORMADO",
-      localEvento:
-        "Clube de Campo da Franca (Rod. Candido Portinari, km 383, zona rural, municipio de Restinga/SP).",
-      dataEvento: "24 a 26 de Marco de 2026.",
-      horarioEvento: "08 as 17 horas.",
+      localEvento: "Local configuravel pela organizacao.",
+      dataEvento: "Data configuravel.",
+      horarioEvento: "Horario configuravel.",
       qrPngBuffer
     };
 

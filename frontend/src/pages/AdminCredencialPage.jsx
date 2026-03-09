@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getAdminCredencialById, updateAdminCredencial } from "../api/credenciamentoApi";
+import { getAdminCredentialById, updateAdminCredential } from "../api/platformApi";
 import AdminCredencialView from "../components/AdminCredencialView";
+import { t } from "../locales";
 
 export default function AdminCredencialPage() {
   const { id } = useParams();
@@ -14,10 +15,10 @@ export default function AdminCredencialPage() {
     setLoading(true);
     setError("");
     try {
-      const response = await getAdminCredencialById(id);
+      const response = await getAdminCredentialById(id);
       setData(response);
     } catch (loadError) {
-      setError(loadError.message || "Credencial nao encontrada.");
+      setError(loadError.message || t("credentialPage.fallbackNotFound"));
     } finally {
       setLoading(false);
     }
@@ -37,10 +38,10 @@ export default function AdminCredencialPage() {
         setSaving(true);
         setError("");
         try {
-          const updated = await updateAdminCredencial(id, payload);
+          const updated = await updateAdminCredential(id, payload);
           setData(updated);
         } catch (saveError) {
-          setError(saveError.message || "Falha ao salvar credencial.");
+          setError(saveError.message || t("credentialPage.fallbackSaveError"));
         } finally {
           setSaving(false);
         }

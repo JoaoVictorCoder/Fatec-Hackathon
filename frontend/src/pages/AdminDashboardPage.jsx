@@ -1,31 +1,32 @@
 import { useEffect, useState } from "react";
 import {
-  createAdminComissao,
+  createAdminGovernanceParticipant,
   createAdminUser,
-  exportAdminBackup,
-  getAdminAccessLogs,
-  getAdminStandVisitorsReport,
-  getAdminAnalyticsDescarbonizacao,
+  deactivateAdminParticipant,
+  getAdminAnalyticsCarbon,
   getAdminAnalyticsFraud,
   getAdminAnalyticsOverview,
-  getAdminAuditLogs,
   getAdminBackupStatus,
-  getAdminCredenciadoById,
-  getAdminCredenciadoEventos,
-  getAdminCredenciados,
-  getAdminEventos,
-  getAdminUsers,
-  patchAdminCredencialStatus,
-  patchAdminUserActive,
-  patchAdminUserPermissions,
-  reissueAdminCredencial,
-  softDeleteAdminCredenciado,
-  updateAdminCredenciado,
+  listAdminAccessLogs,
+  listAdminAuditLogs,
+  listAdminParticipantEvents,
+  listAdminParticipants,
+  listAdminSystemEvents,
+  listAdminUnitVisitorsReport,
+  listAdminUsers,
+  reissueAdminCredential,
+  runAdminBackupExport,
+  runAdminCheckInValidation,
+  updateAdminCredentialStatus,
+  updateAdminParticipant,
   updateAdminUser,
-  validateAdminCheckIn
-} from "../api/credenciamentoApi";
+  updateAdminUserActive,
+  updateAdminUserPermissions,
+  getAdminParticipantById
+} from "../api/platformApi";
 import AdminDashboard from "../components/AdminDashboard";
 import InternalUsersPanel from "../components/InternalUsersPanel";
+import { t } from "../locales";
 
 const emptyListResponse = { items: [], page: 1, totalPages: 1 };
 const emptyRestrictedListResponse = { items: [], page: 1, totalPages: 1, total: 0 };
@@ -48,7 +49,7 @@ const initialAccessLogFilters = {
   resultado: ""
 };
 
-const initialStandReportFilters = {
+const initialUnitReportFilters = {
   standId: "",
   operatorId: "",
   comissaoResponsavelId: "",
@@ -58,18 +59,15 @@ const initialStandReportFilters = {
   categoria: ""
 };
 
-function AccessLogsSection({ accessLogFilters, internalUsers, accessLogs, onChangeFilter, onApply }) {
+function AccessLogsSection({ filters, internalUsers, accessLogs, onChangeFilter, onApply }) {
   return (
     <section className="card">
-      <h3>Logs de Entrada</h3>
+      <h3>{t("adminLists.accessLogsTitle")}</h3>
       <div className="grid">
         <label>
-          Operador
-          <select
-            value={accessLogFilters.operatorId}
-            onChange={(event) => onChangeFilter("operatorId", event.target.value)}
-          >
-            <option value="">Todos</option>
+          {t("adminLists.operator")}
+          <select value={filters.operatorId} onChange={(event) => onChangeFilter("operatorId", event.target.value)}>
+            <option value="">{t("common.unrestricted")}</option>
             {internalUsers.map((user) => (
               <option key={user.id} value={user.id}>
                 {user.nome}
@@ -78,39 +76,39 @@ function AccessLogsSection({ accessLogFilters, internalUsers, accessLogs, onChan
           </select>
         </label>
         <label>
-          Comissao
+          {t("adminLists.governanceId")}
           <input
-            value={accessLogFilters.comissaoResponsavelId}
+            value={filters.comissaoResponsavelId}
             onChange={(event) => onChangeFilter("comissaoResponsavelId", event.target.value)}
           />
         </label>
         <label>
-          Stand ID
-          <input value={accessLogFilters.standId} onChange={(event) => onChangeFilter("standId", event.target.value)} />
+          {t("adminLists.unitId")}
+          <input value={filters.standId} onChange={(event) => onChangeFilter("standId", event.target.value)} />
         </label>
         <label>
-          Empresa ID
+          {t("adminLists.organizationId")}
           <input
-            value={accessLogFilters.empresaVinculadaId}
+            value={filters.empresaVinculadaId}
             onChange={(event) => onChangeFilter("empresaVinculadaId", event.target.value)}
           />
         </label>
         <label>
-          Data inicial
-          <input type="datetime-local" value={accessLogFilters.dateFrom} onChange={(event) => onChangeFilter("dateFrom", event.target.value)} />
+          {t("adminLists.startDate")}
+          <input type="datetime-local" value={filters.dateFrom} onChange={(event) => onChangeFilter("dateFrom", event.target.value)} />
         </label>
         <label>
-          Data final
-          <input type="datetime-local" value={accessLogFilters.dateTo} onChange={(event) => onChangeFilter("dateTo", event.target.value)} />
+          {t("adminLists.endDate")}
+          <input type="datetime-local" value={filters.dateTo} onChange={(event) => onChangeFilter("dateTo", event.target.value)} />
         </label>
         <label>
-          Categoria
-          <input value={accessLogFilters.categoria} onChange={(event) => onChangeFilter("categoria", event.target.value)} />
+          {t("table.category")}
+          <input value={filters.categoria} onChange={(event) => onChangeFilter("categoria", event.target.value)} />
         </label>
         <label>
-          Resultado
-          <select value={accessLogFilters.resultado} onChange={(event) => onChangeFilter("resultado", event.target.value)}>
-            <option value="">Todos</option>
+          {t("adminLists.result")}
+          <select value={filters.resultado} onChange={(event) => onChangeFilter("resultado", event.target.value)}>
+            <option value="">{t("common.unrestricted")}</option>
             <option value="ALLOW">ALLOW</option>
             <option value="DENY">DENY</option>
           </select>
@@ -118,7 +116,7 @@ function AccessLogsSection({ accessLogFilters, internalUsers, accessLogs, onChan
       </div>
       <div className="toolbar">
         <button type="button" onClick={onApply}>
-          Aplicar filtros
+          {t("adminLists.applyFilters")}
         </button>
       </div>
       <ul className="event-list compact">
@@ -128,13 +126,13 @@ function AccessLogsSection({ accessLogFilters, internalUsers, accessLogs, onChan
               {item.resultado} - {item.motivo}
             </strong>
             <span>
-              {item.nomeCredenciado || "Sem vinculo"} | Operador: {item.operatorNome || "-"} ({item.operatorEmail || "-"})
+              {item.nomeCredenciado || t("adminDashboard.noLinkedParticipant")} | {t("adminLists.operator")}: {item.operatorNome || "-"} ({item.operatorEmail || "-"})
             </span>
             <small>
-              Stand: {item.standName || "-"} ({item.standId || "-"}) | Empresa: {item.empresaVinculadaNome || item.empresaNome || "-"} | Comissao:{" "}
+              {t("adminLists.unit")}: {item.standName || "-"} ({item.standId || "-"}) | {t("adminLists.organization")}: {item.empresaVinculadaNome || item.empresaNome || "-"} | {t("adminLists.governance")}:{" "}
               {item.comissaoResponsavelNome || item.comissaoResponsavelId || "-"}
             </small>
-            <small>{new Date(item.createdAt).toLocaleString("pt-BR")}</small>
+            <small>{new Date(item.createdAt).toLocaleString()}</small>
           </li>
         ))}
       </ul>
@@ -142,25 +140,19 @@ function AccessLogsSection({ accessLogFilters, internalUsers, accessLogs, onChan
   );
 }
 
-function StandVisitorsSection({
-  standReportFilters,
-  internalUsers,
-  standReport,
-  onChangeFilter,
-  onApply
-}) {
+function UnitVisitorsSection({ filters, internalUsers, reportItems, onChangeFilter, onApply }) {
   return (
     <section className="card">
-      <h3>Relatorio de Visitantes por Stand</h3>
+      <h3>{t("adminLists.visitorsByUnitTitle")}</h3>
       <div className="grid">
         <label>
-          Stand ID
-          <input value={standReportFilters.standId} onChange={(event) => onChangeFilter("standId", event.target.value)} />
+          {t("adminLists.unitId")}
+          <input value={filters.standId} onChange={(event) => onChangeFilter("standId", event.target.value)} />
         </label>
         <label>
-          Operador
-          <select value={standReportFilters.operatorId} onChange={(event) => onChangeFilter("operatorId", event.target.value)}>
-            <option value="">Todos</option>
+          {t("adminLists.operator")}
+          <select value={filters.operatorId} onChange={(event) => onChangeFilter("operatorId", event.target.value)}>
+            <option value="">{t("common.unrestricted")}</option>
             {internalUsers.map((user) => (
               <option key={user.id} value={user.id}>
                 {user.nome}
@@ -169,51 +161,51 @@ function StandVisitorsSection({
           </select>
         </label>
         <label>
-          Comissao
+          {t("adminLists.governanceId")}
           <input
-            value={standReportFilters.comissaoResponsavelId}
+            value={filters.comissaoResponsavelId}
             onChange={(event) => onChangeFilter("comissaoResponsavelId", event.target.value)}
           />
         </label>
         <label>
-          Empresa ID
+          {t("adminLists.organizationId")}
           <input
-            value={standReportFilters.empresaVinculadaId}
+            value={filters.empresaVinculadaId}
             onChange={(event) => onChangeFilter("empresaVinculadaId", event.target.value)}
           />
         </label>
         <label>
-          Data inicial
-          <input type="datetime-local" value={standReportFilters.dateFrom} onChange={(event) => onChangeFilter("dateFrom", event.target.value)} />
+          {t("adminLists.startDate")}
+          <input type="datetime-local" value={filters.dateFrom} onChange={(event) => onChangeFilter("dateFrom", event.target.value)} />
         </label>
         <label>
-          Data final
-          <input type="datetime-local" value={standReportFilters.dateTo} onChange={(event) => onChangeFilter("dateTo", event.target.value)} />
+          {t("adminLists.endDate")}
+          <input type="datetime-local" value={filters.dateTo} onChange={(event) => onChangeFilter("dateTo", event.target.value)} />
         </label>
         <label>
-          Categoria
-          <input value={standReportFilters.categoria} onChange={(event) => onChangeFilter("categoria", event.target.value)} />
+          {t("table.category")}
+          <input value={filters.categoria} onChange={(event) => onChangeFilter("categoria", event.target.value)} />
         </label>
       </div>
       <div className="toolbar">
         <button type="button" onClick={onApply}>
-          Atualizar relatorio
+          {t("adminLists.updateReport")}
         </button>
       </div>
       <ul className="event-list compact">
-        {standReport.map((item) => (
+        {reportItems.map((item) => (
           <li key={item.accessAttemptId} className="event-item">
             <strong>
               {item.visitor?.nomeCompleto || "-"} | {item.visitor?.categoria || "-"}
             </strong>
             <span>
-              Stand: {item.standName || "-"} ({item.standId || "-"}) | Empresa: {item.empresaVinculadaNome || item.empresaNome || "-"}
+              {t("adminLists.unit")}: {item.standName || "-"} ({item.standId || "-"}) | {t("adminLists.organization")}: {item.empresaVinculadaNome || item.empresaNome || "-"}
             </span>
             <small>
-              Contato: {item.visitor?.email || "-"} | {item.visitor?.celular || "-"} | LGPD compartilhamento:{" "}
-              {item.visitor?.aceitouCompartilhamentoComExpositores ? "sim" : "nao"}
+              {t("adminLists.contact")}: {item.visitor?.email || "-"} | {item.visitor?.celular || "-"} | {t("adminLists.sharingConsent")}:{" "}
+              {item.visitor?.aceitouCompartilhamentoComExpositores ? t("common.yes") : t("common.no")}
             </small>
-            <small>{new Date(item.createdAt).toLocaleString("pt-BR")}</small>
+            <small>{new Date(item.createdAt).toLocaleString()}</small>
           </li>
         ))}
       </ul>
@@ -224,12 +216,12 @@ function StandVisitorsSection({
 function BackupSection({ backupStatus, onGenerate }) {
   return (
     <section className="card">
-      <h3>Backup / Continuidade</h3>
-      <p>Diretorio: {backupStatus?.backupDir || "-"}</p>
-      <p>Total de arquivos: {backupStatus?.totalFiles ?? 0}</p>
-      <p>Ultimo backup: {backupStatus?.latestFile || "nenhum"}</p>
+      <h3>{t("adminLists.backupTitle")}</h3>
+      <p>{t("adminLists.backupDirectory", { value: backupStatus?.backupDir || "-" })}</p>
+      <p>{t("adminLists.backupTotalFiles", { value: backupStatus?.totalFiles ?? 0 })}</p>
+      <p>{t("adminLists.backupLatest", { value: backupStatus?.latestFile || t("common.none") })}</p>
       <button type="button" onClick={onGenerate}>
-        Gerar backup agora
+        {t("adminLists.generateBackup")}
       </button>
     </section>
   );
@@ -237,90 +229,93 @@ function BackupSection({ backupStatus, onGenerate }) {
 
 export default function AdminDashboardPage({ admin, onLogout }) {
   const [listResponse, setListResponse] = useState(emptyListResponse);
-  const [eventos, setEventos] = useState([]);
+  const [systemEvents, setSystemEvents] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [analyticsOverview, setAnalyticsOverview] = useState(null);
   const [analyticsFraud, setAnalyticsFraud] = useState([]);
-  const [analyticsDescarbonizacao, setAnalyticsDescarbonizacao] = useState(null);
+  const [analyticsCarbon, setAnalyticsCarbon] = useState(null);
   const [checkInResult, setCheckInResult] = useState(null);
   const [checkInLoading, setCheckInLoading] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [filters, setFilters] = useState(initialFilters);
   const [selectedDetails, setSelectedDetails] = useState(null);
   const [selectedEvents, setSelectedEvents] = useState([]);
-  const [creatingComissao, setCreatingComissao] = useState(false);
-  const [createComissaoError, setCreateComissaoError] = useState("");
+  const [isCreatingGovernance, setIsCreatingGovernance] = useState(false);
+  const [createGovernanceError, setCreateGovernanceError] = useState("");
   const [internalUsers, setInternalUsers] = useState([]);
   const [accessLogs, setAccessLogs] = useState([]);
   const [backupStatus, setBackupStatus] = useState(null);
   const [accessLogFilters, setAccessLogFilters] = useState(initialAccessLogFilters);
-  const [standReportFilters, setStandReportFilters] = useState(initialStandReportFilters);
-  const [standReport, setStandReport] = useState([]);
+  const [unitReportFilters, setUnitReportFilters] = useState(initialUnitReportFilters);
+  const [unitVisitorsReport, setUnitVisitorsReport] = useState([]);
 
   async function loadData(activeFilters = filters) {
-    setLoading(true);
-    setError("");
+    setIsLoading(true);
+    setErrorMessage("");
 
     try {
       if (admin?.role === "COMISSAO_ORGANIZADORA") {
         const [usersData, accessLogsData, reportData] = await Promise.all([
-          getAdminUsers(),
-          getAdminAccessLogs({ page: 1, pageSize: 30, ...accessLogFilters }),
-          getAdminStandVisitorsReport(standReportFilters)
+          listAdminUsers(),
+          listAdminAccessLogs({ page: 1, pageSize: 30, ...accessLogFilters }),
+          listAdminUnitVisitorsReport(unitReportFilters)
         ]);
 
         setInternalUsers(usersData.items || []);
         setAccessLogs(accessLogsData.items || []);
-        setStandReport(reportData.items || []);
+        setUnitVisitorsReport(reportData.items || []);
         setListResponse(emptyRestrictedListResponse);
-        setEventos([]);
+        setSystemEvents([]);
         setAuditLogs([]);
         setAnalyticsOverview(null);
         setAnalyticsFraud([]);
-        setAnalyticsDescarbonizacao(null);
+        setAnalyticsCarbon(null);
         setBackupStatus(null);
         return;
       }
 
-      const [listData, eventData, logData, overview, fraud, descarbonizacao] = await Promise.all([
-        getAdminCredenciados(activeFilters),
-        getAdminEventos({ limit: 60 }),
-        getAdminAuditLogs({ page: 1, pageSize: 40 }),
+      const [participantsData, eventsData, logsData, overviewData, fraudData, carbonData] = await Promise.all([
+        listAdminParticipants({
+          ...activeFilters,
+          category: activeFilters.categoria
+        }),
+        listAdminSystemEvents({ limit: 60 }),
+        listAdminAuditLogs({ page: 1, pageSize: 40 }),
         getAdminAnalyticsOverview(),
         getAdminAnalyticsFraud(),
-        getAdminAnalyticsDescarbonizacao()
+        getAdminAnalyticsCarbon()
       ]);
 
-      setListResponse(listData);
-      setEventos(eventData);
-      setAuditLogs(logData.items || []);
-      setAnalyticsOverview(overview);
-      setAnalyticsFraud(fraud);
-      setAnalyticsDescarbonizacao(descarbonizacao);
+      setListResponse(participantsData);
+      setSystemEvents(eventsData);
+      setAuditLogs(logsData.items || []);
+      setAnalyticsOverview(overviewData);
+      setAnalyticsFraud(fraudData);
+      setAnalyticsCarbon(carbonData);
 
       if (admin?.role === "MASTER_ADMIN") {
         const [usersData, accessLogsData, backupData, reportData] = await Promise.all([
-          getAdminUsers(),
-          getAdminAccessLogs({ page: 1, pageSize: 30, ...accessLogFilters }),
+          listAdminUsers(),
+          listAdminAccessLogs({ page: 1, pageSize: 30, ...accessLogFilters }),
           getAdminBackupStatus(),
-          getAdminStandVisitorsReport(standReportFilters)
+          listAdminUnitVisitorsReport(unitReportFilters)
         ]);
 
         setInternalUsers(usersData.items || []);
         setAccessLogs(accessLogsData.items || []);
         setBackupStatus(backupData);
-        setStandReport(reportData.items || []);
+        setUnitVisitorsReport(reportData.items || []);
       } else {
         setInternalUsers([]);
         setAccessLogs([]);
-        setStandReport([]);
+        setUnitVisitorsReport([]);
         setBackupStatus(null);
       }
     } catch (loadError) {
-      setError(loadError.message || "Falha ao carregar dados administrativos.");
+      setErrorMessage(loadError.message || t("errors.adminDataLoad"));
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   }
 
@@ -329,16 +324,16 @@ export default function AdminDashboardPage({ admin, onLogout }) {
   }, [filters.page, filters.pageSize, filters.categoria]);
 
   function changeAccessLogFilter(field, value) {
-    setAccessLogFilters((prev) => ({ ...prev, [field]: value }));
+    setAccessLogFilters((currentFilters) => ({ ...currentFilters, [field]: value }));
   }
 
-  function changeStandReportFilter(field, value) {
-    setStandReportFilters((prev) => ({ ...prev, [field]: value }));
+  function changeUnitReportFilter(field, value) {
+    setUnitReportFilters((currentFilters) => ({ ...currentFilters, [field]: value }));
   }
 
   async function refreshSelectedDetails() {
     if (!selectedDetails?.id) return;
-    const refreshed = await getAdminCredenciadoById(selectedDetails.id);
+    const refreshed = await getAdminParticipantById(selectedDetails.id);
     setSelectedDetails(refreshed);
   }
 
@@ -347,27 +342,27 @@ export default function AdminDashboardPage({ admin, onLogout }) {
       <AdminDashboard
         admin={admin}
         listResponse={listResponse}
-        eventos={eventos}
-        loading={loading}
-        error={error}
+        systemEvents={systemEvents}
+        loading={isLoading}
+        error={errorMessage}
         filters={filters}
-        onChangeFilters={(next) => {
-          setFilters(next);
-          if (next.search !== filters.search) {
-            loadData(next);
+        onChangeFilters={(nextFilters) => {
+          setFilters(nextFilters);
+          if (nextFilters.search !== filters.search) {
+            loadData(nextFilters);
           }
         }}
         onReload={() => loadData(filters)}
-        onOpenDetails={async (id) => {
+        onOpenDetails={async (participantId) => {
           try {
             const [identity, eventsData] = await Promise.all([
-              getAdminCredenciadoById(id),
-              getAdminCredenciadoEventos(id)
+              getAdminParticipantById(participantId),
+              listAdminParticipantEvents(participantId)
             ]);
             setSelectedDetails(identity);
             setSelectedEvents(eventsData);
           } catch (detailError) {
-            setError(detailError.message || "Falha ao carregar detalhes.");
+            setErrorMessage(detailError.message || t("errors.detailsLoad"));
           }
         }}
         selectedDetails={selectedDetails}
@@ -378,59 +373,59 @@ export default function AdminDashboardPage({ admin, onLogout }) {
         }}
         onSaveDetails={async (payload) => {
           if (!selectedDetails?.id) return;
-          await updateAdminCredenciado(selectedDetails.id, payload);
+          await updateAdminParticipant(selectedDetails.id, payload);
           await refreshSelectedDetails();
           await loadData(filters);
         }}
         onSoftDeleteDetails={async () => {
           if (!selectedDetails?.id) return;
-          await softDeleteAdminCredenciado(selectedDetails.id, "inativacao manual");
+          await deactivateAdminParticipant(selectedDetails.id, "manual deactivation");
           await refreshSelectedDetails();
           await loadData(filters);
         }}
         onCredentialStatusChange={async (statusCredencial) => {
           if (!selectedDetails?.credencial?.id) return;
-          await patchAdminCredencialStatus(selectedDetails.credencial.id, {
+          await updateAdminCredentialStatus(selectedDetails.credencial.id, {
             statusCredencial,
-            motivo: "acao manual no painel admin"
+            motivo: "manual admin action"
           });
           await refreshSelectedDetails();
           await loadData(filters);
         }}
         onReissueCredential={async () => {
           if (!selectedDetails?.credencial?.id) return;
-          await reissueAdminCredencial(selectedDetails.credencial.id, {
-            motivo: "reemissao manual no painel admin"
+          await reissueAdminCredential(selectedDetails.credencial.id, {
+            motivo: "manual admin reissue"
           });
           await refreshSelectedDetails();
           await loadData(filters);
         }}
-        onCreateComissao={async (payload) => {
-          setCreatingComissao(true);
-          setCreateComissaoError("");
+        onCreateGovernanceMember={async (payload) => {
+          setIsCreatingGovernance(true);
+          setCreateGovernanceError("");
           try {
-            await createAdminComissao(payload);
+            await createAdminGovernanceParticipant(payload);
             await loadData(filters);
           } catch (createError) {
-            setCreateComissaoError(createError.message || "Erro ao criar membro.");
+            setCreateGovernanceError(createError.message || t("errors.governanceCreate"));
             throw createError;
           } finally {
-            setCreatingComissao(false);
+            setIsCreatingGovernance(false);
           }
         }}
-        creatingComissao={creatingComissao}
-        createComissaoError={createComissaoError}
+        creatingGovernanceMember={isCreatingGovernance}
+        createGovernanceError={createGovernanceError}
         onLogout={onLogout}
         auditLogs={auditLogs}
         onRunCheckIn={async (payload) => {
           setCheckInLoading(true);
-          setError("");
+          setErrorMessage("");
           try {
-            const result = await validateAdminCheckIn(payload);
+            const result = await runAdminCheckInValidation(payload);
             setCheckInResult(result);
             await loadData(filters);
           } catch (checkError) {
-            setError(checkError.message || "Falha no check-in.");
+            setErrorMessage(checkError.message || t("errors.checkIn"));
           } finally {
             setCheckInLoading(false);
           }
@@ -439,7 +434,7 @@ export default function AdminDashboardPage({ admin, onLogout }) {
         checkInLoading={checkInLoading}
         analyticsOverview={analyticsOverview}
         analyticsFraud={analyticsFraud}
-        analyticsDescarbonizacao={analyticsDescarbonizacao}
+        analyticsDescarbonizacao={analyticsCarbon}
       />
 
       {(admin?.role === "MASTER_ADMIN" || admin?.role === "COMISSAO_ORGANIZADORA") && (
@@ -452,33 +447,33 @@ export default function AdminDashboardPage({ admin, onLogout }) {
               await createAdminUser(payload);
               await loadData(filters);
             }}
-            onToggleActive={async (id, ativo) => {
-              await patchAdminUserActive(id, ativo);
+            onToggleActive={async (userId, isActive) => {
+              await updateAdminUserActive(userId, isActive);
               await loadData(filters);
             }}
-            onUpdatePermissions={async (id, permissions) => {
-              await patchAdminUserPermissions(id, permissions);
+            onUpdatePermissions={async (userId, permissions) => {
+              await updateAdminUserPermissions(userId, permissions);
               await loadData(filters);
             }}
-            onUpdateUser={async (id, payload) => {
-              await updateAdminUser(id, payload);
+            onUpdateUser={async (userId, payload) => {
+              await updateAdminUser(userId, payload);
               await loadData(filters);
             }}
           />
 
           <AccessLogsSection
-            accessLogFilters={accessLogFilters}
+            filters={accessLogFilters}
             internalUsers={internalUsers}
             accessLogs={accessLogs}
             onChangeFilter={changeAccessLogFilter}
             onApply={() => loadData(filters)}
           />
 
-          <StandVisitorsSection
-            standReportFilters={standReportFilters}
+          <UnitVisitorsSection
+            filters={unitReportFilters}
             internalUsers={internalUsers}
-            standReport={standReport}
-            onChangeFilter={changeStandReportFilter}
+            reportItems={unitVisitorsReport}
+            onChangeFilter={changeUnitReportFilter}
             onApply={() => loadData(filters)}
           />
 
@@ -486,7 +481,7 @@ export default function AdminDashboardPage({ admin, onLogout }) {
             <BackupSection
               backupStatus={backupStatus}
               onGenerate={async () => {
-                await exportAdminBackup();
+                await runAdminBackupExport();
                 await loadData(filters);
               }}
             />

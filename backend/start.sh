@@ -1,19 +1,19 @@
 #!/bin/sh
 set -e
 
-echo "Aguardando banco..."
+echo "Waiting for database..."
 MAX_TRIES=20
 TRY=1
 APPLIED=0
 
 while [ "$TRY" -le "$MAX_TRIES" ]; do
-  echo "Tentativa $TRY/$MAX_TRIES: aplicando migrations..."
+  echo "Attempt $TRY/$MAX_TRIES: applying migrations..."
   if npm run prisma:migrate:deploy; then
     APPLIED=1
     break
   fi
 
-  echo "migrate deploy falhou. Tentando db push com accept-data-loss..."
+  echo "migrate deploy failed. Trying db push with accept-data-loss..."
   if npx prisma db push --accept-data-loss; then
     APPLIED=1
     break
@@ -24,12 +24,12 @@ while [ "$TRY" -le "$MAX_TRIES" ]; do
 done
 
 if [ "$APPLIED" -ne 1 ]; then
-  echo "Falha ao aplicar schema do banco apos $MAX_TRIES tentativas."
+  echo "Failed to apply database schema after $MAX_TRIES attempts."
   exit 1
 fi
 
-echo "Rodando seed..."
+echo "Running seed..."
 npm run seed
 
-echo "Iniciando backend..."
+echo "Starting backend..."
 npm run start

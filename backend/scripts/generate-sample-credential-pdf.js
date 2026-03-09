@@ -4,7 +4,7 @@ import QRCode from "qrcode";
 import { buildCredentialPdf } from "../src/providers/pdf/credentialPdfProvider.js";
 
 const outDir = path.resolve("output");
-const outFile = path.join(outDir, "credencial-alta-cafe-modelo.pdf");
+const outFile = path.join(outDir, "credential-template-sample.pdf");
 
 const credenciado = {
   nomeCompleto: "JOAO VICTOR CODER",

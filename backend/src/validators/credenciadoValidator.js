@@ -139,7 +139,7 @@ export function validateCredenciadoPayload(payload, options = {}) {
     !cpf &&
     !cnpj
   ) {
-    errors.push("Para cafeicultor, informe CPF, CNPJ ou ambos");
+    errors.push("Para produtor, informe CPF, CNPJ ou ambos");
   }
 
   if (categoria === Categoria.VISITANTE && !nacionalidade) {

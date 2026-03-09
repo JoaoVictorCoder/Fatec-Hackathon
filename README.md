@@ -1,149 +1,84 @@
-# :coffee: Fatec Hackathon
+# OpsFlow Core
 
-<div align="center">
+OpsFlow Core is an open source platform for credentialing, administrative operations, and access control workflows.
 
-![Status](https://img.shields.io/badge/status-em%20desenvolvimento-3b7a57?style=for-the-badge)
-![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20Vite-61dafb?style=for-the-badge&logo=react&logoColor=black)
-![Backend](https://img.shields.io/badge/backend-Node.js%20%2B%20Express-339933?style=for-the-badge&logo=node.js&logoColor=white)
-![Database](https://img.shields.io/badge/database-Prisma%20%2B%20SQLite%2FSQL-2d3748?style=for-the-badge&logo=prisma&logoColor=white)
+It can be used as a base for:
+- events and visitor management
+- internal access operations
+- administrative workflow control
+- operational audit and observability
 
-</div>
+## Key Features
 
----
+- Public participant registration
+- Credential issuance with QR code and PDF
+- Admin dashboard with CRUD and status controls
+- Operator console for QR check-in validation
+- Audit logs and access logs
+- Analytics and fraud/anomaly insights
+- Internal user management with role-based permissions
+- Backup export and status monitoring
 
-## :bust_in_silhouette: Sobre o projeto
+## Tech Stack
 
-Sistema de **credenciamento e controle de acesso para eventos**, com foco em:
+- Frontend: React + Vite
+- Backend: Node.js + Express
+- Database: PostgreSQL + Prisma
+- Documents: PDFKit + QRCode
+- Container runtime: Docker Compose
 
-- cadastro publico de participantes
-- emissao de credencial com **QR Code** e **PDF**
-- painel administrativo para operacao, auditoria e gestao
-- area de operador para validacao de entrada
-- recursos de relatorio, backup e acompanhamento de acessos
-
-O projeto foi estruturado para separar claramente os fluxos de **Publico**, **Admin** e **Operador QR**, reduzindo acoplamento entre interface, API e persistencia.
-
-## :rocket: Tecnologias e ferramentas
-
-<div align="center">
-  <img src="https://skillicons.dev/icons?i=react,vite,js,nodejs,express,prisma,docker,sqlite" />
-</div>
-
-Principais tecnologias usadas no sistema:
-
-- **Frontend:** React, React Router e Vite
-- **Backend:** Node.js, Express e Prisma
-- **Persistencia:** banco modelado com Prisma
-- **Infra local:** Docker Compose
-- **Documentos:** PDFKit para geracao de credenciais
-
-## :open_file_folder: Estrutura principal
+## Repository Structure
 
 ```text
-Fatec-Hackathon/
-├── frontend/
-│   └── src/
-│       ├── api/
-│       ├── components/
-│       ├── constants/
-│       ├── utils/
-│       └── App.jsx
-├── backend/
-│   ├── prisma/
-│   └── src/
-│       ├── adapters/
-│       ├── application/
-│       ├── controllers/
-│       ├── providers/
-│       ├── repositories/
-│       ├── routes/
-│       └── services/
-└── docs/
-    └── MANUTENCAO.md
+opsflow-core/
+|-- frontend/
+|   `-- src/
+|       |-- api/
+|       |-- components/
+|       |-- constants/
+|       |-- locales/
+|       |-- pages/
+|       |-- utils/
+|       `-- App.jsx
+|-- backend/
+|   |-- prisma/
+|   `-- src/
+|       |-- adapters/
+|       |-- application/
+|       |-- config/
+|       |-- controllers/
+|       |-- domain/
+|       |-- http/
+|       |-- middlewares/
+|       |-- providers/
+|       |-- repositories/
+|       |-- routes/
+|       `-- services/
+|-- docs/
+|   `-- MANUTENCAO.md
+|-- docker-compose.yml
+|-- CONTRIBUTING.md
+`-- LICENSE
 ```
 
-## :gear: Funcionalidades principais
+## Quick Start (Local)
 
-### :earth_americas: Area publica
+### 1. Prerequisites
 
-- cadastro de credenciados
-- validacao de campos e mascara de documentos
-- geracao de credencial
-- acesso ao PDF da credencial
-- exibicao do QR Code apos cadastro
+- Node.js 20+
+- npm 10+
+- PostgreSQL 14+
 
-### :closed_lock_with_key: Area administrativa
+### 2. Configure Environment Variables
 
-- login autenticado com sessao
-- listagem e busca de credenciados
-- edicao de dados cadastrais
-- reemissao e alteracao de status da credencial
-- auditoria e analytics
-- logs de acesso
-- relatorio de visitantes por stand
-- gestao de usuarios internos
-- exportacao e monitoramento de backup
+Copy templates:
 
-### :iphone: Area do operador QR
+```bash
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+```
 
-- login exclusivo para operacao
-- leitura e validacao de check-in
-- historico resumido de validacoes
-
-## :triangular_ruler: Arquitetura
-
-O backend segue uma organizacao inspirada em **arquitetura hexagonal**, com separacao entre:
-
-- **ports/use-cases:** contratos e regras de aplicacao
-- **http:** parsing de request e contexto de ator para controllers
-- **adapters:** integracoes com banco, PDF, QR e catraca
-- **repositories:** acesso a dados com Prisma
-- **controllers/routes:** camada HTTP
-
-No acesso a dados, os fragmentos compartilhados de `include/select` Prisma foram centralizados em `backend/src/repositories/queryFragments.js`, reduzindo duplicacao entre repositories e facilitando manutencao dos payloads de consulta.
-
-No frontend, o arquivo `frontend/src/App.jsx` centraliza a navegacao e a composicao das tres jornadas do sistema.
-O contrato HTTP do frontend fica concentrado em `frontend/src/api/credenciamentoApi.js`.
-
-## :satellite: Rotas principais
-
-### Publicas
-
-- `POST /credenciados`
-- `GET /credenciais/:id/pdf`
-- `GET /credenciais/:id/qrcode`
-- `GET /health`
-
-### Autenticacao
-
-- `POST /auth/login`
-- `POST /auth/operator/login`
-- `POST /auth/logout`
-- `GET /auth/me`
-- `GET /auth/operator/me`
-
-### Administrativas
-
-- `GET /admin/credenciados`
-- `GET /admin/credenciados/:id`
-- `PUT /admin/credenciados/:id`
-- `DELETE /admin/credenciados/:id`
-- `GET /admin/eventos`
-- `GET /admin/audit-logs`
-- `GET /admin/users`
-- `GET /admin/access-logs`
-- `GET /admin/backup/status`
-- `POST /admin/backup/export`
-
-### Operador
-
-- `GET /operator/me`
-- `POST /operator/check-in/validate`
-- `GET /operator/history-basic`
-
-## :computer: Como executar
-
-### Backend
+### 3. Backend
 
 ```bash
 cd backend
@@ -154,7 +89,9 @@ npm run seed
 npm run dev
 ```
 
-### Frontend
+Backend will run at `http://localhost:3001`.
+
+### 4. Frontend
 
 ```bash
 cd frontend
@@ -162,72 +99,122 @@ npm install
 npm run dev
 ```
 
-### Docker
+Frontend will run at `http://localhost:5173`.
+
+## Quick Start (Docker)
 
 ```bash
 docker compose up --build
 ```
 
-## :key: Perfis do sistema
+Services:
+- frontend: `http://localhost:5173`
+- backend: `http://localhost:3001`
+- postgres: `localhost:5432`
 
-- `MASTER_ADMIN`: acesso total, usuarios, permissoes e backup
-- `ADMIN`: operacao administrativa geral
-- `OPERADOR_QR`: validacao de entrada em campo
-- `COMISSAO_ORGANIZADORA`: operacao e acompanhamento com escopo controlado
+## Environment Variables
 
-## :shield: Variaveis de seguranca recomendadas
+### Backend (`backend/.env`)
 
-No backend, configure as variaveis abaixo para endurecer autenticacao, cookies e protecao contra abuso:
+- `DATABASE_URL`
+- `PORT`
+- `JWT_SECRET` (required in production, minimum 32 chars)
+- `JWT_EXPIRES_IN`
+- `CORS_ORIGINS`
+- `AUTH_COOKIE_SECURE`
+- `AUTH_COOKIE_SAMESITE`
+- `TRUST_PROXY`
+- `JSON_BODY_LIMIT`
+- `AUTH_RATE_LIMIT_*`
+- `PUBLIC_WRITE_RATE_LIMIT_*`
+- `CHECKIN_RATE_LIMIT_*`
+- seed users (`ADMIN_EMAIL`, `MASTER_EMAIL`, etc.)
 
-- `JWT_SECRET` (obrigatoria em producao, minimo 32 caracteres)
-- `JWT_EXPIRES_IN` (default `8h`)
-- `CORS_ORIGINS` (lista separada por virgula, ex: `https://painel.seudominio.com`)
-- `AUTH_COOKIE_SECURE=true` (cookie apenas em HTTPS)
-- `AUTH_COOKIE_SAMESITE` (`lax`, `strict` ou `none`)
-- `TRUST_PROXY=true` (quando rodar atras de proxy/load balancer)
-- `JSON_BODY_LIMIT` (default `256kb`)
-- `AUTH_RATE_LIMIT_WINDOW_MS` e `AUTH_RATE_LIMIT_MAX` (limite de tentativas de login)
-- `PUBLIC_WRITE_RATE_LIMIT_WINDOW_MS` e `PUBLIC_WRITE_RATE_LIMIT_MAX` (limite de cadastro publico)
-- `CHECKIN_RATE_LIMIT_WINDOW_MS` e `CHECKIN_RATE_LIMIT_MAX` (limite de validacoes de check-in)
+### Frontend (`frontend/.env`)
 
-## :bar_chart: Dados e regras relevantes
+- `VITE_API_URL`
 
-- status de credenciamento: `CADASTRADO`, `APROVADO`, `BLOQUEADO`, `CHECKED_IN`, `INATIVO`
-- status de credencial: `GERADA`, `ATIVA`, `INATIVA`, `UTILIZADA`, `CANCELADA`
-- aceite LGPD obrigatorio no cadastro
-- compartilhamento com expositores controlado por consentimento
-- logs e auditoria para acoes sensiveis
+## Architecture Notes
 
-## :seedling: Carbono e deslocamento
+- `routes`: endpoint declarations and middleware chaining
+- `controllers`: HTTP adaptation and response handling
+- `http`: shared helpers for query parsing and actor context
+- `services`: business rules and orchestration
+- `repositories`: Prisma data access
+- `providers/adapters`: external integration boundaries (PDF, QR, gate)
+- `application`: use-cases and input/output ports
 
-O formulario publico tambem considera dados de deslocamento, com:
+## How to Customize
 
-- cidade de origem
-- tipo de combustivel
-- distancia estimada
-- pegada de carbono simplificada
+- Product texts and labels:
+  - `frontend/src/locales/en-us.json`
+  - `frontend/src/locales/pt-br.json`
+- Active UI language:
+  - `frontend/src/locales/index.js`
+  - change `ACTIVE_LANGUAGE_CODE` to `"en-us"` or `"pt-br"`
+- Form fields and category model:
+  - `frontend/src/constants/formConfig.js`
+- PDF layout and branding:
+  - `backend/src/providers/pdf/credentialPdfProvider.js`
+- Seed data:
+  - `backend/prisma/seed.js`
+- Security and session behavior:
+  - `backend/src/config/auth.js`
+  - `backend/src/middlewares/*`
 
-Isso permite alimentar os dashboards de descarbonizacao no painel administrativo.
+## API Overview
 
-## :memo: Documentacao de manutencao
+### Public
 
-Para modificacoes manuais futuras, consulte:
+- `POST /credenciados`
+- `GET /credenciais/:id/pdf`
+- `GET /credenciais/:id/qrcode`
+- `GET /health`
 
-- [docs/MANUTENCAO.md](docs/MANUTENCAO.md)
+### Auth
 
-Esse guia explica:
+- `POST /auth/login`
+- `POST /auth/operator/login`
+- `POST /auth/logout`
+- `GET /auth/me`
 
-- onde alterar campos, filtros e papeis
-- quais arquivos participam de cada fluxo
-- pontos de acoplamento sensiveis
-- ordem segura para mudancas estruturais
+### Admin / Operator
 
-## :warning: Limitacoes atuais
+Includes participant management, credential lifecycle, events, audit, access logs, reports, check-in, analytics, backup, and internal users.
 
-- integracao fisica com catraca ainda esta em modo mock
-- layout institucional do PDF ainda usa placeholders visuais
-- o foco principal continua em operacao local e demonstracao
+## Known Limitations
 
-## :pray: Resumo
+- Gate integration is currently mocked.
+- There is no automated test suite yet.
+- Some domain enums and payload keys are still Portuguese for compatibility with current Prisma schema and existing endpoint contracts.
 
-Este repositório concentra um sistema completo de credenciamento com fluxo publico, administrativo e operacional, organizado para permitir evolucao futura com menos retrabalho e maior previsibilidade nas alteracoes.
+## Localization (Simple i18n)
+
+- Dictionaries:
+  - `frontend/src/locales/en-us.json`
+  - `frontend/src/locales/pt-br.json`
+- Active language is controlled by one centralized variable:
+  - `frontend/src/locales/index.js`
+  - `ACTIVE_LANGUAGE_CODE = "en-us"` (default)
+- To switch language:
+  1. Open `frontend/src/locales/index.js`
+  2. Change `ACTIVE_LANGUAGE_CODE` to `pt-br` or `en-us`
+- To add a new language:
+  1. Create a new locale file in `frontend/src/locales/`
+  2. Register it in `dictionaryByLanguage` inside `frontend/src/locales/index.js`
+  3. Keep key parity with `en-us.json`
+
+## Roadmap (Suggested)
+
+- Add automated unit/integration tests
+- Add API docs (OpenAPI/Swagger)
+- Add CI workflow for lint/build/test/security checks
+- Add pluggable gate provider implementations
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+MIT. See [LICENSE](LICENSE).

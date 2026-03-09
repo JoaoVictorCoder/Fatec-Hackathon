@@ -1,14 +1,15 @@
 import { useState } from "react";
+import { t } from "../locales";
 
 export default function AdminLoginForm({
   onSubmit,
   loading,
   error,
-  title = "Login Administrativo",
-  subtitle = "Area restrita para equipe organizadora."
+  title = t("auth.admin.title"),
+  subtitle = t("auth.admin.subtitle")
 }) {
   const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
+  const [password, setPassword] = useState("");
 
   return (
     <section className="card auth-card">
@@ -19,11 +20,11 @@ export default function AdminLoginForm({
         className="grid single-column"
         onSubmit={(event) => {
           event.preventDefault();
-          onSubmit({ email, senha });
+          onSubmit({ email, senha: password });
         }}
       >
         <label>
-          E-mail
+          {t("auth.email")}
           <input
             type="email"
             value={email}
@@ -33,17 +34,17 @@ export default function AdminLoginForm({
         </label>
 
         <label>
-          Senha
+          {t("auth.password")}
           <input
             type="password"
-            value={senha}
-            onChange={(event) => setSenha(event.target.value)}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
             required
           />
         </label>
 
         <button type="submit" disabled={loading}>
-          {loading ? "Entrando..." : "Entrar"}
+          {loading ? t("auth.signingIn") : t("auth.signIn")}
         </button>
       </form>
 

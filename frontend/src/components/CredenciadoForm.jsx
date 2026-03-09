@@ -1,33 +1,38 @@
 import {
   categoryExtraFields,
-  categoriaOptions,
+  categoryOptions,
   commonFields,
-  labels
+  formFieldLabelKeyByField
 } from "../constants/formConfig";
+import { t } from "../locales";
 import {
-  CIDADES_VIZINHAS_FRANCA,
-  calculateCarbonEstimateFront,
-  resolveDistanceFromCidade
+  REFERENCE_CITY_DISTANCES_KM,
+  calculateCarbonEstimate,
+  resolveDistanceFromCity
 } from "../utils/validation";
 
-function documentHint(categoria) {
-  if (categoria === "CAFEICULTOR") {
-    return "Para cafeicultor, informe CPF, CNPJ ou ambos.";
-  }
-  if (categoria === "EXPOSITOR" || categoria === "IMPRENSA") {
-    return "Para esta categoria, informe CNPJ.";
-  }
-  if (categoria === "COMISSAO_ORGANIZADORA") {
-    return "Para esta categoria, informe CPF.";
-  }
-  return "Informe CPF e/ou CNPJ conforme sua situacao.";
-}
-
-const ufOptions = [
+const stateCodeOptions = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS",
   "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC",
   "SP", "SE", "TO", "EX"
 ];
+
+function getFieldLabel(fieldName) {
+  return t(formFieldLabelKeyByField[fieldName] || fieldName);
+}
+
+function getDocumentHintByCategory(category) {
+  if (category === "CAFEICULTOR") {
+    return t("form.documentHintProducer");
+  }
+  if (category === "EXPOSITOR" || category === "IMPRENSA") {
+    return t("form.documentHintCompany");
+  }
+  if (category === "COMISSAO_ORGANIZADORA") {
+    return t("form.documentHintGovernance");
+  }
+  return t("form.documentHintDefault");
+}
 
 export default function CredenciadoForm({
   form,
@@ -39,180 +44,189 @@ export default function CredenciadoForm({
   onSubmit
 }) {
   const extraFields = categoryExtraFields[form.categoria] || [];
-  const isVisitanteInternacional =
+  const isInternationalVisitor =
     form.categoria === "VISITANTE" &&
     form.nacionalidade &&
     form.nacionalidade.toLowerCase() !== "brasil";
-  const showError = (field) => touched[field] && errors[field];
+  const shouldShowError = (field) => touched[field] && errors[field];
 
   return (
     <form onSubmit={onSubmit} className="grid">
       <label>
-        Categoria *
+        {t("form.category")} *
         <select name="categoria" value={form.categoria} onChange={onChange} required>
-          {categoriaOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
+          {categoryOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {t(option.labelKey)}
             </option>
           ))}
         </select>
       </label>
 
-      {commonFields.map((field) => (
-        <label key={field}>
-          {labels[field]} *
-          {field === "uf" ? (
+      {commonFields.map((fieldName) => (
+        <label key={fieldName}>
+          {getFieldLabel(fieldName)} *
+          {fieldName === "uf" ? (
             <select
-              name={field}
-              value={form[field]}
+              name={fieldName}
+              value={form[fieldName]}
               onChange={onChange}
               onBlur={onBlur}
-              className={showError(field) ? "input-error" : ""}
-              required={!isVisitanteInternacional}
+              className={shouldShowError(fieldName) ? "input-error" : ""}
+              required={!isInternationalVisitor}
             >
-              <option value="">Selecione</option>
-              {ufOptions.map((uf) => (
-                <option key={uf} value={uf}>
-                  {uf}
+              <option value="">{t("form.selectOne")}</option>
+              {stateCodeOptions.map((stateCode) => (
+                <option key={stateCode} value={stateCode}>
+                  {stateCode}
                 </option>
               ))}
             </select>
           ) : (
             <input
-              name={field}
-              value={form[field]}
+              name={fieldName}
+              value={form[fieldName]}
               onChange={onChange}
               onBlur={onBlur}
               required
-              maxLength={field === "uf" ? 2 : undefined}
-              className={showError(field) ? "input-error" : ""}
+              className={shouldShowError(fieldName) ? "input-error" : ""}
             />
           )}
-          {showError(field) && <small className="field-error">{errors[field]}</small>}
+          {shouldShowError(fieldName) && (
+            <small className="field-error">{t(errors[fieldName])}</small>
+          )}
         </label>
       ))}
 
       <label>
-        {labels.cpf}
+        {getFieldLabel("cpf")}
         <input
           name="cpf"
           value={form.cpf}
           onChange={onChange}
           onBlur={onBlur}
-          className={showError("cpf") ? "input-error" : ""}
+          className={shouldShowError("cpf") ? "input-error" : ""}
         />
-        {showError("cpf") && <small className="field-error">{errors.cpf}</small>}
+        {shouldShowError("cpf") && <small className="field-error">{t(errors.cpf)}</small>}
       </label>
 
       <label>
-        {labels.cnpj}
+        {getFieldLabel("cnpj")}
         <input
           name="cnpj"
           value={form.cnpj}
           onChange={onChange}
           onBlur={onBlur}
-          className={showError("cnpj") ? "input-error" : ""}
+          className={shouldShowError("cnpj") ? "input-error" : ""}
         />
-        {showError("cnpj") && <small className="field-error">{errors.cnpj}</small>}
+        {shouldShowError("cnpj") && <small className="field-error">{t(errors.cnpj)}</small>}
       </label>
 
       <label>
-        {labels.combustivel} *
+        {getFieldLabel("combustivel")} *
         <select
           name="combustivel"
           value={form.combustivel}
           onChange={onChange}
           onBlur={onBlur}
-          className={showError("combustivel") ? "input-error" : ""}
+          className={shouldShowError("combustivel") ? "input-error" : ""}
         >
-          <option value="NAO_INFORMADO">Nao informado</option>
-          <option value="GASOLINA">Gasolina</option>
-          <option value="ALCOOL">Alcool</option>
-          <option value="DIESEL">Diesel</option>
-          <option value="ELETRICO">Eletrico</option>
+          <option value="NAO_INFORMADO">{t("fuel.notInformed")}</option>
+          <option value="GASOLINA">{t("fuel.gasoline")}</option>
+          <option value="ALCOOL">{t("fuel.ethanol")}</option>
+          <option value="DIESEL">{t("fuel.diesel")}</option>
+          <option value="ELETRICO">{t("fuel.electric")}</option>
         </select>
-        {showError("combustivel") && <small className="field-error">{errors.combustivel}</small>}
+        {shouldShowError("combustivel") && (
+          <small className="field-error">{t(errors.combustivel)}</small>
+        )}
       </label>
 
       <label>
-        {labels.cidadeOrigem} *
+        {getFieldLabel("cidadeOrigem")} *
         <input
           name="cidadeOrigem"
           value={form.cidadeOrigem}
           onChange={onChange}
           onBlur={onBlur}
-          list="cidades-franca"
-          className={showError("cidadeOrigem") ? "input-error" : ""}
+          list="reference-city-list"
+          className={shouldShowError("cidadeOrigem") ? "input-error" : ""}
         />
-        <datalist id="cidades-franca">
-          {Object.keys(CIDADES_VIZINHAS_FRANCA).map((cidade) => (
-            <option key={cidade} value={cidade} />
+        <datalist id="reference-city-list">
+          {Object.keys(REFERENCE_CITY_DISTANCES_KM).map((city) => (
+            <option key={city} value={city} />
           ))}
         </datalist>
-        {showError("cidadeOrigem") && <small className="field-error">{errors.cidadeOrigem}</small>}
+        {shouldShowError("cidadeOrigem") && (
+          <small className="field-error">{t(errors.cidadeOrigem)}</small>
+        )}
       </label>
 
       <label>
-        {labels.distanciaKm}
+        {getFieldLabel("distanciaKm")}
         <input
           type="number"
           min="0"
           step="0.1"
           name="distanciaKm"
-          value={form.distanciaKm || resolveDistanceFromCidade(form.cidadeOrigem || form.municipio)}
+          value={form.distanciaKm || resolveDistanceFromCity(form.cidadeOrigem || form.municipio)}
           readOnly
-          className={showError("distanciaKm") ? "input-error" : ""}
+          className={shouldShowError("distanciaKm") ? "input-error" : ""}
         />
-        {showError("distanciaKm") && <small className="field-error">{errors.distanciaKm}</small>}
-        <small className="hint-text">Distancia preenchida automaticamente pela cidade de origem.</small>
+        {shouldShowError("distanciaKm") && (
+          <small className="field-error">{t(errors.distanciaKm)}</small>
+        )}
+        <small className="hint-text">{t("form.distanceHint")}</small>
       </label>
 
       <div className="detail-field full-span">
-        <span>{labels.pegadaCarbonoEstimada}</span>
+        <span>{getFieldLabel("pegadaCarbonoEstimada")}</span>
         <strong>
           {(() => {
-            const estimate = calculateCarbonEstimateFront({
+            const estimate = calculateCarbonEstimate({
               cidadeOrigem: form.cidadeOrigem || form.municipio,
               combustivel: form.combustivel,
               distanciaKm: form.distanciaKm
             });
             if (estimate === null) {
-              return "Nao calculada (combustivel nao informado)";
+              return t("form.carbonUnknown");
             }
             return `${estimate.toFixed(3)} kg CO2e`;
           })()}
         </strong>
-        <small>Estimativa simplificada para operacao do evento.</small>
+        <small>{t("form.carbonHelper")}</small>
       </div>
 
-      <p className="hint-text full-span">{documentHint(form.categoria)}</p>
-      {errors.documento && <p className="error full-span">{errors.documento}</p>}
+      <p className="hint-text full-span">{getDocumentHintByCategory(form.categoria)}</p>
+      {errors.documento && <p className="error full-span">{t(errors.documento)}</p>}
 
-      {extraFields.map((field) => (
-        <label key={field}>
-          {labels[field]} {field !== "siteEmpresa" ? "*" : "(Opcional)"}
+      {extraFields.map((fieldName) => (
+        <label key={fieldName}>
+          {getFieldLabel(fieldName)} {fieldName !== "siteEmpresa" ? "*" : `(${t("common.optional")})`}
           <input
-            name={field}
-            value={form[field]}
+            name={fieldName}
+            value={form[fieldName]}
             onChange={onChange}
             onBlur={onBlur}
             required={
-              field === "nacionalidade"
+              fieldName === "nacionalidade"
                 ? form.categoria === "VISITANTE"
-                : field !== "siteEmpresa"
+                : fieldName !== "siteEmpresa"
             }
             placeholder={
-              field === "nacionalidade" || field === "nacionalidadeEmpresa" ? "Brasil" : undefined
+              fieldName === "nacionalidade" || fieldName === "nacionalidadeEmpresa" ? "Brasil" : undefined
             }
-            className={showError(field) ? "input-error" : ""}
+            className={shouldShowError(fieldName) ? "input-error" : ""}
           />
-          {showError(field) && <small className="field-error">{errors[field]}</small>}
+          {shouldShowError(fieldName) && (
+            <small className="field-error">{t(errors[fieldName])}</small>
+          )}
         </label>
       ))}
 
       <label className="checkbox">
         <input type="checkbox" name="pcd" checked={form.pcd} onChange={onChange} />
-        {labels.pcd}
+        {getFieldLabel("pcd")}
       </label>
 
       <label className="checkbox">
@@ -224,7 +238,7 @@ export default function CredenciadoForm({
           onBlur={onBlur}
           required
         />
-        Aceito os termos da LGPD
+        {t("form.privacyConsentLabel")}
       </label>
 
       <label className="checkbox">
@@ -234,18 +248,17 @@ export default function CredenciadoForm({
           checked={form.aceitouCompartilhamentoComExpositores}
           onChange={onChange}
         />
-        Aceito compartilhar meus dados com expositores/stands visitados para contato posterior
+        {getFieldLabel("aceitouCompartilhamentoComExpositores")}
       </label>
-      {showError("aceitouLgpd") && (
-        <small className="field-error full-span">{errors.aceitouLgpd}</small>
+
+      {shouldShowError("aceitouLgpd") && (
+        <small className="field-error full-span">{t(errors.aceitouLgpd)}</small>
       )}
-      <p className="lgpd-text">
-        Ao enviar, voce autoriza o tratamento dos seus dados pessoais para fins de
-        credenciamento e controle de acesso do evento.
-      </p>
+
+      <p className="lgpd-text">{t("form.privacyDisclaimer")}</p>
 
       <button type="submit" disabled={saving} className="full-span">
-        {saving ? "Salvando..." : "Cadastrar"}
+        {saving ? t("form.submitting") : t("form.submit")}
       </button>
     </form>
   );

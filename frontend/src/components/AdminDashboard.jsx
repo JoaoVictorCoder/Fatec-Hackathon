@@ -1,19 +1,35 @@
 import { useState } from "react";
-import { categoriaOptions, adminComissaoCategoria } from "../constants/formConfig";
+import { categoryOptions, governanceCategoryOption } from "../constants/formConfig";
+import { t } from "../locales";
 import AdminComissaoForm from "./AdminComissaoForm";
 import AdminCredenciadoDetails from "./AdminCredenciadoDetails";
 import AdminCredenciadosTable from "./AdminCredenciadosTable";
 
 const categoryFilterOptions = [
-  { value: "", label: "Todas categorias" },
-  ...categoriaOptions,
-  adminComissaoCategoria
+  { value: "", labelKey: "common.unrestricted" },
+  ...categoryOptions,
+  governanceCategoryOption
 ];
+
+function SectionSelector({ value, onChange }) {
+  return (
+    <label>
+      {t("adminDashboard.section")}
+      <select className="section-switch" value={value} onChange={(event) => onChange(event.target.value)}>
+        <option value="credenciados">{t("adminDashboard.sectionParticipants")}</option>
+        <option value="eventos">{t("adminDashboard.sectionSystemEvents")}</option>
+        <option value="audit">{t("adminDashboard.sectionAuditLogs")}</option>
+        <option value="checkin">{t("adminDashboard.sectionCheckIn")}</option>
+        <option value="analytics">{t("adminDashboard.sectionAnalytics")}</option>
+      </select>
+    </label>
+  );
+}
 
 export default function AdminDashboard({
   admin,
   listResponse,
-  eventos,
+  systemEvents,
   loading,
   error,
   filters,
@@ -27,9 +43,9 @@ export default function AdminDashboard({
   onSoftDeleteDetails,
   onCredentialStatusChange,
   onReissueCredential,
-  onCreateComissao,
-  creatingComissao,
-  createComissaoError,
+  onCreateGovernanceMember,
+  creatingGovernanceMember,
+  createGovernanceError,
   onLogout,
   auditLogs,
   onRunCheckIn,
@@ -39,94 +55,80 @@ export default function AdminDashboard({
   analyticsFraud,
   analyticsDescarbonizacao
 }) {
-  const [showComissaoForm, setShowComissaoForm] = useState(false);
+  const [showGovernanceForm, setShowGovernanceForm] = useState(false);
   const [activeSection, setActiveSection] = useState("credenciados");
   const [checkInForm, setCheckInForm] = useState({
     codigoUnico: "",
-    gateCode: "GATE-ENTRADA-01",
-    accessPoint: "Portao Principal"
+    gateCode: "GATE-ENTRY-01",
+    accessPoint: "Main Gate"
   });
+
   const items = listResponse?.items || [];
   const page = listResponse?.page || 1;
   const totalPages = listResponse?.totalPages || 1;
-  const isComissao = admin?.role === "COMISSAO_ORGANIZADORA";
+  const isGovernanceProfile = admin?.role === "COMISSAO_ORGANIZADORA";
 
   return (
     <main className="single-page">
       <section className="card">
         <div className="admin-header">
           <div>
-            <h2>Painel Administrativo</h2>
-            <p>Logado como {admin?.nome || admin?.email}</p>
+            <h2>{t("adminDashboard.title")}</h2>
+            <p>{t("adminDashboard.loggedAs", { name: admin?.nome || admin?.email || "-" })}</p>
           </div>
           <div className="toolbar">
-            {!isComissao && (
-              <button type="button" onClick={() => setShowComissaoForm(true)}>
-                Adicionar Comissao Organizadora
+            {!isGovernanceProfile && (
+              <button type="button" onClick={() => setShowGovernanceForm(true)}>
+                {t("adminDashboard.addGovernanceMember")}
               </button>
             )}
             <button type="button" onClick={onReload} disabled={loading}>
-              {loading ? "Atualizando..." : "Atualizar"}
+              {loading ? t("common.refreshing") : t("common.refresh")}
             </button>
             <button type="button" onClick={onLogout}>
-              Logout
+              {t("common.logout")}
             </button>
           </div>
         </div>
 
-        {!isComissao && (
+        {!isGovernanceProfile && (
           <div className="filters">
-          <label>
-            Secao
-            <select
-              className="section-switch"
-              value={activeSection}
-              onChange={(event) => setActiveSection(event.target.value)}
-            >
-              <option value="credenciados">Credenciados</option>
-              <option value="eventos">Eventos</option>
-              <option value="audit">Audit Logs</option>
-              <option value="checkin">Check-in</option>
-              <option value="analytics">Analytics/Fraude</option>
-            </select>
-          </label>
-          <label>
-            Busca
-            <input
-              value={filters.search}
-              placeholder="Nome ou email"
-              onChange={(event) =>
-                onChangeFilters({ ...filters, search: event.target.value, page: 1 })
-              }
-            />
-          </label>
-          <label>
-            Categoria
-            <select
-              value={filters.categoria}
-              onChange={(event) =>
-                onChangeFilters({ ...filters, categoria: event.target.value, page: 1 })
-              }
-            >
-              {categoryFilterOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+            <SectionSelector value={activeSection} onChange={setActiveSection} />
+            <label>
+              {t("adminDashboard.search")}
+              <input
+                value={filters.search}
+                placeholder={t("adminDashboard.searchPlaceholder")}
+                onChange={(event) =>
+                  onChangeFilters({ ...filters, search: event.target.value, page: 1 })
+                }
+              />
+            </label>
+            <label>
+              {t("adminDashboard.category")}
+              <select
+                value={filters.categoria}
+                onChange={(event) =>
+                  onChangeFilters({ ...filters, categoria: event.target.value, page: 1 })
+                }
+              >
+                {categoryFilterOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {t(option.labelKey)}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         )}
 
-        {isComissao && (
-          <p className="section-subtitle">
-            Escopo da comissao: gerencie operadores QR vinculados e consulte logs de acesso do seu escopo.
-          </p>
+        {isGovernanceProfile && (
+          <p className="section-subtitle">{t("adminDashboard.governanceScopeText")}</p>
         )}
 
         {error && <p className="error">{error}</p>}
 
-        {!isComissao && activeSection === "credenciados" && (
+        {!isGovernanceProfile && activeSection === "credenciados" && (
           <>
             <AdminCredenciadosTable items={items} onOpenDetails={onOpenDetails} />
 
@@ -136,33 +138,31 @@ export default function AdminDashboard({
                 disabled={page <= 1}
                 onClick={() => onChangeFilters({ ...filters, page: page - 1 })}
               >
-                Anterior
+                {t("common.previous")}
               </button>
-              <span>
-                Pagina {page} de {totalPages}
-              </span>
+              <span>{t("common.pageOf", { page, totalPages })}</span>
               <button
                 type="button"
                 disabled={page >= totalPages}
                 onClick={() => onChangeFilters({ ...filters, page: page + 1 })}
               >
-                Proxima
+                {t("common.next")}
               </button>
             </div>
           </>
         )}
 
-        {!isComissao && activeSection === "eventos" && (
+        {!isGovernanceProfile && activeSection === "eventos" && (
           <>
-            <h3>Eventos recentes</h3>
+            <h3>{t("adminDashboard.recentEventsTitle")}</h3>
             <ul className="event-list compact">
-              {eventos.map((evento) => (
-                <li key={evento.id} className="event-item">
-                  <strong>{evento.tipoEvento}</strong>
-                  <span>{evento.descricao}</span>
+              {systemEvents.map((eventItem) => (
+                <li key={eventItem.id} className="event-item">
+                  <strong>{eventItem.tipoEvento}</strong>
+                  <span>{eventItem.descricao}</span>
                   <small>
-                    {evento.credenciado?.nomeCompleto || "Sem vinculo"} |{" "}
-                    {new Date(evento.createdAt).toLocaleString("pt-BR")}
+                    {eventItem.credenciado?.nomeCompleto || t("adminDashboard.noLinkedParticipant")} |{" "}
+                    {new Date(eventItem.createdAt).toLocaleString()}
                   </small>
                 </li>
               ))}
@@ -170,9 +170,9 @@ export default function AdminDashboard({
           </>
         )}
 
-        {!isComissao && activeSection === "audit" && (
+        {!isGovernanceProfile && activeSection === "audit" && (
           <>
-            <h3>Auditoria administrativa</h3>
+            <h3>{t("adminDashboard.auditTrailTitle")}</h3>
             <ul className="event-list compact">
               {auditLogs.map((log) => (
                 <li key={log.id} className="event-item">
@@ -180,16 +180,16 @@ export default function AdminDashboard({
                   <span>
                     {log.actor?.nome || log.actorType} | {log.recurso}
                   </span>
-                  <small>{new Date(log.createdAt).toLocaleString("pt-BR")}</small>
+                  <small>{new Date(log.createdAt).toLocaleString()}</small>
                 </li>
               ))}
             </ul>
           </>
         )}
 
-        {!isComissao && activeSection === "checkin" && (
+        {!isGovernanceProfile && activeSection === "checkin" && (
           <>
-            <h3>Controle de Entrada (QR / Check-in)</h3>
+            <h3>{t("adminDashboard.accessControlTitle")}</h3>
             <form
               className="grid"
               onSubmit={(event) => {
@@ -198,98 +198,107 @@ export default function AdminDashboard({
               }}
             >
               <label>
-                Codigo Unico
+                {t("adminDashboard.uniqueCode")}
                 <input
                   value={checkInForm.codigoUnico}
                   onChange={(event) =>
-                    setCheckInForm((prev) => ({ ...prev, codigoUnico: event.target.value }))
+                    setCheckInForm((currentForm) => ({ ...currentForm, codigoUnico: event.target.value }))
                   }
                   required
                 />
               </label>
               <label>
-                Gate Code
+                {t("adminDashboard.accessPointCode")}
                 <input
                   value={checkInForm.gateCode}
                   onChange={(event) =>
-                    setCheckInForm((prev) => ({ ...prev, gateCode: event.target.value }))
+                    setCheckInForm((currentForm) => ({ ...currentForm, gateCode: event.target.value }))
                   }
                   required
                 />
               </label>
               <label>
-                Access Point
+                {t("adminDashboard.accessPoint")}
                 <input
                   value={checkInForm.accessPoint}
                   onChange={(event) =>
-                    setCheckInForm((prev) => ({ ...prev, accessPoint: event.target.value }))
+                    setCheckInForm((currentForm) => ({ ...currentForm, accessPoint: event.target.value }))
                   }
                 />
               </label>
               <button type="submit" disabled={checkInLoading}>
-                {checkInLoading ? "Validando..." : "Validar acesso"}
+                {checkInLoading ? t("adminDashboard.validating") : t("adminDashboard.validateAccess")}
               </button>
             </form>
 
             {checkInResult && (
               <div className={checkInResult.resultado === "ALLOW" ? "success-box" : "error-box"}>
-                <strong>Resultado: {checkInResult.resultado}</strong>
-                <p>Motivo: {checkInResult.motivo}</p>
-                <p>Credencial: {checkInResult.codigoUnico || "N/A"}</p>
+                <strong>{t("adminDashboard.resultLabel", { result: checkInResult.resultado })}</strong>
+                <p>{t("adminDashboard.reasonLabel", { reason: checkInResult.motivo })}</p>
+                <p>
+                  {t("adminDashboard.credentialLabel", {
+                    code: checkInResult.codigoUnico || t("common.notAvailable")
+                  })}
+                </p>
               </div>
             )}
           </>
         )}
 
-        {!isComissao && activeSection === "analytics" && (
+        {!isGovernanceProfile && activeSection === "analytics" && (
           <>
-            <h3>Analytics</h3>
+            <h3>{t("adminDashboard.sectionAnalytics")}</h3>
             {analyticsOverview && (
               <div className="admin-stats">
                 <article className="stat-card">
-                  <strong>Total credenciados</strong>
+                  <strong>{t("adminDashboard.totalParticipants")}</strong>
                   <span>{analyticsOverview.totalCredenciados}</span>
                 </article>
                 <article className="stat-card">
-                  <strong>Credenciais geradas</strong>
+                  <strong>{t("adminDashboard.totalCredentials")}</strong>
                   <span>{analyticsOverview.totalCredenciaisGeradas}</span>
                 </article>
                 <article className="stat-card">
-                  <strong>Check-ins permitidos</strong>
+                  <strong>{t("adminDashboard.allowedCheckIns")}</strong>
                   <span>{analyticsOverview.totalCheckInsPermitidos}</span>
                 </article>
                 <article className="stat-card">
-                  <strong>Check-ins negados</strong>
+                  <strong>{t("adminDashboard.deniedCheckIns")}</strong>
                   <span>{analyticsOverview.totalCheckInsNegados}</span>
                 </article>
               </div>
             )}
 
-            <h4>Fraude/Anomalias</h4>
+            <h4>{t("adminDashboard.fraudSignalsTitle")}</h4>
             <ul className="event-list compact">
-              {(analyticsFraud || []).map((item, idx) => (
-                <li key={`${item.type}-${idx}`} className="event-item">
+              {(analyticsFraud || []).map((item, index) => (
+                <li key={`${item.type}-${index}`} className="event-item">
                   <strong>{item.type}</strong>
                   <span>{item.message}</span>
-                  <small>Severidade: {item.severity} | Quantidade: {item.count}</small>
+                  <small>
+                    {t("adminDashboard.severityCount", {
+                      severity: item.severity,
+                      count: item.count
+                    })}
+                  </small>
                 </li>
               ))}
             </ul>
 
             {analyticsDescarbonizacao?.resumo && (
               <>
-                <h4>Descarbonizacao (mock)</h4>
+                <h4>{t("adminDashboard.carbonPanelTitle")}</h4>
                 <div className="admin-stats">
                   <article className="stat-card">
-                    <strong>Registros</strong>
+                    <strong>{t("adminDashboard.records")}</strong>
                     <span>{analyticsDescarbonizacao.resumo.totalRegistros}</span>
                   </article>
                   <article className="stat-card">
-                    <strong>Media CO2 (kg)</strong>
+                    <strong>{t("adminDashboard.averageCo2")}</strong>
                     <span>{Number(analyticsDescarbonizacao.resumo.mediaEmissaoKgCo2 || 0).toFixed(2)}</span>
                   </article>
                   <article className="stat-card">
-                    <strong>Media distancia (km)</strong>
+                    <strong>{t("adminDashboard.averageDistance")}</strong>
                     <span>{Number(analyticsDescarbonizacao.resumo.mediaDistanciaKm || 0).toFixed(0)}</span>
                   </article>
                 </div>
@@ -302,7 +311,7 @@ export default function AdminDashboard({
       {selectedDetails && (
         <AdminCredenciadoDetails
           credenciado={selectedDetails}
-          eventos={selectedEvents}
+          historyEvents={selectedEvents}
           onClose={onCloseDetails}
           onSave={onSaveDetails}
           onSoftDelete={onSoftDeleteDetails}
@@ -311,14 +320,14 @@ export default function AdminDashboard({
         />
       )}
 
-      {!isComissao && showComissaoForm && (
+      {!isGovernanceProfile && showGovernanceForm && (
         <AdminComissaoForm
-          loading={creatingComissao}
-          error={createComissaoError}
-          onClose={() => setShowComissaoForm(false)}
+          loading={creatingGovernanceMember}
+          error={createGovernanceError}
+          onClose={() => setShowGovernanceForm(false)}
           onCreate={async (payload) => {
-            await onCreateComissao(payload);
-            setShowComissaoForm(false);
+            await onCreateGovernanceMember(payload);
+            setShowGovernanceForm(false);
           }}
         />
       )}

@@ -49,7 +49,7 @@ ADD CONSTRAINT "DescarbonizacaoRegistro_credenciadoId_fkey"
 FOREIGN KEY ("credenciadoId") REFERENCES "Credenciado"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 INSERT INTO "Evento" ("id", "nomeEvento", "isGratuito", "ativo", "createdAt", "updatedAt")
-VALUES ('11111111-1111-1111-1111-111111111111', 'Fatec Hackathon Credenciamento Setor Cafeeiro', true, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+VALUES ('11111111-1111-1111-1111-111111111111', 'OpsFlow Core - Demo Event', true, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 ON CONFLICT ("id") DO NOTHING;
 
 UPDATE "Credenciado"

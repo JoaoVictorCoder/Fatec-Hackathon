@@ -1,7 +1,7 @@
 import { prisma } from "../prisma.js";
 
 const DEFAULT_EVENTO_ID = "11111111-1111-1111-1111-111111111111";
-const DEFAULT_EVENTO_NOME = "Fatec Hackathon Credenciamento Setor Cafeeiro";
+const DEFAULT_EVENTO_NOME = "OpsFlow Core - Default Event";
 
 export async function findActiveEvento(tx = prisma) {
   return tx.evento.findFirst({

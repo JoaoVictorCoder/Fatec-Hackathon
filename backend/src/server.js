@@ -3,5 +3,5 @@ import { app } from "./app.js";
 const port = Number(process.env.PORT || 3001);
 
 app.listen(port, () => {
-  console.log(`Backend online na porta ${port}`);
+  console.log(`Backend running on port ${port}`);
 });
