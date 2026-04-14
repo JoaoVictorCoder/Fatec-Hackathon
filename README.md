@@ -192,6 +192,7 @@ If you need additional components from ShadCN:
 - `GET /credenciais/:id/pdf`
 - `GET /credenciais/:id/qrcode`
 - `GET /health`
+- `GET /codorna`
 
 ### Auth
 
